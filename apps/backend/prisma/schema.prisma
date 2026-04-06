@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  fullName     String     @map("full_name")
+  avatarUrl    String?    @map("avatar_url")
+  role         UserRole   @default(USER)
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  documents     Document[]
+  chatSessions  ChatSession[]
+  workspaces    Workspace[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  DELETED
+}
+
+model Document {
+  id               String         @id @default(uuid())
+  userId           String         @map("user_id")
+  title            String
+  originalFilename String         @map("original_filename")
+  storageKey       String         @map("storage_key")
+  mimeType         String         @map("mime_type")
+  fileSize         BigInt         @map("file_size")
+  sourceLanguage   String?        @map("source_language")
+  pageCount        Int?           @map("page_count")
+  status           DocumentStatus @default(UPLOADED)
+  errorMessage     String?        @map("error_message")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content        DocumentContent?
+  summaries      Summary[]
+  translations   Translation[]
+  audioVersions  AudioVersion[]
+  chatSessions   ChatSession[]
+  workspaceLinks WorkspaceDocument[]
+
+  @@index([userId])
+  @@map("documents")
+}
+
+model DocumentContent {
+  id               String   @id @default(uuid())
+  documentId       String   @unique @map("document_id")
+  extractedText    String   @map("extracted_text") @db.Text
+  cleanedText      String   @map("cleaned_text") @db.Text
+  textLength       Int      @map("text_length")
+  detectedLanguage String   @map("detected_language")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_contents")
+}
+
+enum SummaryType {
+  SHORT
+  DETAILED
+  BULLET
+  BEGINNER
+  PRESENTATION
+}
+
+model Summary {
+  id               String      @id @default(uuid())
+  documentId       String      @map("document_id")
+  language         String
+  summaryType      SummaryType @map("summary_type")
+  promptStyle      String?     @map("prompt_style")
+  content          String      @db.Text
+  createdByAiModel String      @map("created_by_ai_model")
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("summaries")
+}
+
+model Translation {
+  id               String   @id @default(uuid())
+  documentId       String   @map("document_id")
+  sourceType       String   @map("source_type")
+  sourceId         String?  @map("source_id")
+  sourceLanguage   String   @map("source_language")
+  targetLanguage   String   @map("target_language")
+  style            String?
+  content          String   @db.Text
+  createdByAiModel String   @map("created_by_ai_model")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("translations")
+}
+
+model AudioVersion {
+  id              String   @id @default(uuid())
+  documentId      String?  @map("document_id")
+  sourceType      String   @map("source_type")
+  sourceId        String?  @map("source_id")
+  language        String
+  voiceName       String   @map("voice_name")
+  speed           Decimal  @db.Decimal(3, 2)
+  audioStorageKey String   @map("audio_storage_key")
+  durationSeconds Int?     @map("duration_seconds")
+  status          String
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([documentId])
+  @@map("audio_versions")
+}
+
+model Workspace {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents    WorkspaceDocument[]
+  chatSessions ChatSession[]
+
+  @@index([userId])
+  @@map("workspaces")
+}
+
+model WorkspaceDocument {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  documentId  String   @map("document_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  document  Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, documentId])
+  @@index([workspaceId])
+  @@index([documentId])
+  @@map("workspace_documents")
+}
+
+model ChatSession {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  documentId  String?  @map("document_id")
+  workspaceId String?  @map("workspace_id")
+  title       String?
+  language    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document  Document?     @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  workspace Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  messages  ChatMessage[]
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([workspaceId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id                String   @id @default(uuid())
+  sessionId         String   @map("session_id")
+  role              String
+  content           String   @db.Text
+  translatedContent String?  @map("translated_content") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
