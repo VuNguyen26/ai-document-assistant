@@ -82,6 +82,7 @@ model Document {
 
   user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   content        DocumentContent?
+  chunks         DocumentChunk[]
   summaries      Summary[]
   translations   Translation[]
   audioVersions  AudioVersion[]
@@ -102,9 +103,31 @@ model DocumentContent {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks   DocumentChunk[]
 
   @@map("document_contents")
+}
+
+model DocumentChunk {
+  id                String   @id @default(uuid())
+  documentId        String   @map("document_id")
+  documentContentId String   @map("document_content_id")
+  chunkIndex        Int      @map("chunk_index")
+  content           String   @db.Text
+  charCount         Int      @map("char_count")
+  startOffset       Int      @map("start_offset")
+  endOffset         Int      @map("end_offset")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentContent DocumentContent @relation(fields: [documentContentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@index([documentContentId])
+  @@map("document_chunks")
 }
 
 enum SummaryType {

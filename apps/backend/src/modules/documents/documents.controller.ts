@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { ChunksService } from '../chunks/chunks.service';
 import { ExtractionService } from '../extraction/extraction.service';
 import { DocumentsService } from './documents.service';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
@@ -32,6 +33,7 @@ export class DocumentsController {
   constructor(
     private readonly documentsService: DocumentsService,
     private readonly extractionService: ExtractionService,
+    private readonly chunksService: ChunksService,
   ) {}
 
   @Post('upload')
@@ -81,6 +83,23 @@ export class DocumentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.extractionService.extractDocument(id, user.id);
+  }
+
+  @HttpCode(200)
+  @Post(':id/chunk')
+  chunk(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.chunksService.chunkDocument(id, user.id);
+  }
+
+  @Get(':id/chunks')
+  findChunks(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.chunksService.listChunks(id, user.id);
   }
 
   @HttpCode(200)
