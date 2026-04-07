@@ -5,6 +5,7 @@ import databaseConfig from './config/database.config';
 import { PrismaModule } from './libs/prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AuthModule } from './modules/auth/auth.module';
     PrismaModule,
     HealthModule,
     AuthModule,
+    DocumentsModule,
   ],
 })
 export class AppModule {}
