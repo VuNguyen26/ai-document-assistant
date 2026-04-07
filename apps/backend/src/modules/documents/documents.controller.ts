@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
+import { ExtractionService } from '../extraction/extraction.service';
 import { DocumentsService } from './documents.service';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -28,7 +29,10 @@ import type { UploadedFile as UploadedDocumentFile } from './interfaces/uploaded
 @UseGuards(JwtAuthGuard)
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly extractionService: ExtractionService,
+  ) {}
 
   @Post('upload')
   @UseInterceptors(
@@ -68,6 +72,15 @@ export class DocumentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.documentsService.findOne(user.id, id);
+  }
+
+  @HttpCode(200)
+  @Post(':id/extract')
+  extract(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.extractionService.extractDocument(id, user.id);
   }
 
   @HttpCode(200)
