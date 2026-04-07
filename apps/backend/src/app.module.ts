@@ -8,6 +8,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ExtractionModule } from './modules/extraction/extraction.module';
 import { ChunksModule } from './modules/chunks/chunks.module';
+import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ChunksModule } from './modules/chunks/chunks.module';
     DocumentsModule,
     ExtractionModule,
     ChunksModule,
+    EmbeddingsModule,
   ],
 })
 export class AppModule {}

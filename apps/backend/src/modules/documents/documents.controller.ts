@@ -26,6 +26,7 @@ import { DocumentsService } from './documents.service';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import type { UploadedFile as UploadedDocumentFile } from './interfaces/uploaded-file.interface';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('documents')
@@ -34,6 +35,7 @@ export class DocumentsController {
     private readonly documentsService: DocumentsService,
     private readonly extractionService: ExtractionService,
     private readonly chunksService: ChunksService,
+    private readonly embeddingsService: EmbeddingsService,
   ) {}
 
   @Post('upload')
@@ -109,5 +111,13 @@ export class DocumentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.documentsService.softDelete(user.id, id);
+  }
+
+  @Post(':id/embed')
+  embed(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.embeddingsService.embedDocument(id, user.id);
   }
 }

@@ -121,13 +121,29 @@ model DocumentChunk {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentContent DocumentContent @relation(fields: [documentContentId], references: [id], onDelete: Cascade)
+  document        Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentContent DocumentContent        @relation(fields: [documentContentId], references: [id], onDelete: Cascade)
+  embedding       DocumentChunkEmbedding?
 
   @@unique([documentId, chunkIndex])
   @@index([documentId])
   @@index([documentContentId])
   @@map("document_chunks")
+}
+
+model DocumentChunkEmbedding {
+  id         String   @id @default(uuid())
+  chunkId     String   @unique @map("chunk_id")
+  model       String
+  dimensions  Int
+  embedding   Unsupported("vector(1536)")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  chunk DocumentChunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([chunkId])
+  @@map("document_chunk_embeddings")
 }
 
 enum SummaryType {
