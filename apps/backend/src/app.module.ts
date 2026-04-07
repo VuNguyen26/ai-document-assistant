@@ -9,6 +9,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
 import { ExtractionModule } from './modules/extraction/extraction.module';
 import { ChunksModule } from './modules/chunks/chunks.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
     ExtractionModule,
     ChunksModule,
     EmbeddingsModule,
+    SearchModule,
   ],
 })
 export class AppModule {}
