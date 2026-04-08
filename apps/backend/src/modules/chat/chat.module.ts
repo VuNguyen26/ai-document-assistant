@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from '../../libs/prisma/prisma.module';
 import { SearchModule } from '../search/search.module';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 
 @Module({
-  imports: [ConfigModule, SearchModule],
+  imports: [ConfigModule, PrismaModule, SearchModule],
   controllers: [ChatController],
   providers: [ChatService],
   exports: [ChatService],

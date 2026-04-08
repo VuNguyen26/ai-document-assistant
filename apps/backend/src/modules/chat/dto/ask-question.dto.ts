@@ -20,6 +20,10 @@ export class AskQuestionDto {
   documentId?: string;
 
   @IsOptional()
+  @IsUUID()
+  sessionId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

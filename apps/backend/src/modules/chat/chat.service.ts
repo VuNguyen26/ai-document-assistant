@@ -1,9 +1,11 @@
 import {
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { PrismaService } from '../../libs/prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { AskQuestionDto } from './dto/ask-question.dto';
 import { RagAnswerResult } from './interfaces/rag-answer-result.interface';
@@ -17,6 +19,7 @@ export class ChatService {
   constructor(
     private readonly configService: ConfigService,
     private readonly searchService: SearchService,
+    private readonly prisma: PrismaService,
   ) {
     const apiKey = this.configService.get<string>('OPENROUTER_API_KEY');
 
@@ -41,6 +44,10 @@ export class ChatService {
     const question = dto.question.trim();
     const topK = dto.topK ?? 5;
 
+    const sessionId = dto.sessionId
+      ? await this.ensureSessionOwnership(dto.sessionId, userId)
+      : await this.createSession(userId, question, dto.documentId);
+
     const searchResult = await this.searchService.semanticSearch(userId, {
       query: question,
       documentId: dto.documentId,
@@ -49,25 +56,24 @@ export class ChatService {
 
     const usedChunks = searchResult.results;
 
-    if (!usedChunks.length) {
-      return {
-        question,
-        documentId: dto.documentId,
-        documentIds: [],
-        topK,
-        usedChunks: [],
-        answer:
-          'Không tìm thấy đủ thông tin liên quan trong tài liệu để trả lời câu hỏi này.',
-      };
+    let answer =
+      'Không tìm thấy đủ thông tin liên quan trong tài liệu để trả lời câu hỏi này.';
+
+    if (usedChunks.length > 0) {
+      const context = this.buildContext(usedChunks);
+      answer = await this.generateAnswer(question, context);
     }
-
-    const context = this.buildContext(usedChunks);
-
-    const answer = await this.generateAnswer(question, context);
 
     const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
 
+    await this.persistConversation({
+      sessionId,
+      userQuestion: question,
+      assistantAnswer: answer,
+    });
+
     return {
+      sessionId,
       question,
       documentId: dto.documentId,
       documentIds,
@@ -75,6 +81,91 @@ export class ChatService {
       usedChunks,
       answer,
     };
+  }
+
+  private async ensureSessionOwnership(
+    sessionId: string,
+    userId: string,
+  ): Promise<string> {
+    const session = await this.prisma.chatSession.findFirst({
+      where: {
+        id: sessionId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Chat session not found');
+    }
+
+    return session.id;
+  }
+
+  private async createSession(
+    userId: string,
+    question: string,
+    documentId?: string,
+  ): Promise<string> {
+    const title = this.generateSessionTitle(question);
+
+    const session = await this.prisma.chatSession.create({
+      data: {
+        userId,
+        documentId: documentId ?? null,
+        workspaceId: null,
+        title,
+        language: 'vi',
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return session.id;
+  }
+
+  private async persistConversation(params: {
+    sessionId: string;
+    userQuestion: string;
+    assistantAnswer: string;
+  }): Promise<void> {
+    const { sessionId, userQuestion, assistantAnswer } = params;
+
+    await this.prisma.$transaction([
+      this.prisma.chatMessage.create({
+        data: {
+          sessionId,
+          role: 'USER',
+          content: userQuestion,
+          translatedContent: null,
+        },
+      }),
+      this.prisma.chatMessage.create({
+        data: {
+          sessionId,
+          role: 'ASSISTANT',
+          content: assistantAnswer,
+          translatedContent: null,
+        },
+      }),
+      this.prisma.chatSession.update({
+        where: { id: sessionId },
+        data: {
+          updatedAt: new Date(),
+        },
+      }),
+    ]);
+  }
+
+  private generateSessionTitle(question: string): string {
+    const clean = question.replace(/\s+/g, ' ').trim();
+    if (clean.length <= 80) {
+      return clean;
+    }
+    return `${clean.slice(0, 77)}...`;
   }
 
   private buildContext(

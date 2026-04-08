@@ -12,6 +12,7 @@ export interface RagUsedChunk {
 }
 
 export interface RagAnswerResult {
+  sessionId: string;
   question: string;
   answer: string;
   documentId?: string;
