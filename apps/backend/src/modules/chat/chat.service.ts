@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -8,6 +9,7 @@ import OpenAI from 'openai';
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { AskQuestionDto } from './dto/ask-question.dto';
+import { ListChatSessionsQueryDto } from './dto/list-chat-sessions-query.dto';
 import { RagAnswerResult } from './interfaces/rag-answer-result.interface';
 
 @Injectable()
@@ -83,6 +85,105 @@ export class ChatService {
     };
   }
 
+  async getUserSessions(
+    userId: string,
+    query: ListChatSessionsQueryDto,
+  ): Promise<{
+    success: true;
+    message: string;
+    data: Array<{
+    id: string;
+    title: string | null;
+    documentId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    }>;
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [total, sessions] = await Promise.all([
+      this.prisma.chatSession.count({
+        where: {
+          userId,
+        },
+      }),
+      this.prisma.chatSession.findMany({
+        where: {
+          userId,
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          documentId: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Chat sessions fetched successfully',
+      data: sessions,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getSessionMessages(
+    userId: string,
+    sessionId: string,
+  ): Promise<{
+    success: true;
+    message: string;
+    data: Array<{
+      id: string;
+      role: string;
+      content: string;
+      createdAt: Date;
+    }>;
+  }> {
+    await this.assertSessionOwnership(sessionId, userId);
+
+    const messages = await this.prisma.chatMessage.findMany({
+      where: {
+        sessionId,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        id: true,
+        role: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Chat messages fetched successfully',
+      data: messages,
+    };
+  }
+
   private async ensureSessionOwnership(
     sessionId: string,
     userId: string,
@@ -102,6 +203,31 @@ export class ChatService {
     }
 
     return session.id;
+  }
+
+  private async assertSessionOwnership(
+    sessionId: string,
+    userId: string,
+  ): Promise<void> {
+    const session = await this.prisma.chatSession.findUnique({
+      where: {
+        id: sessionId,
+      },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Chat session not found');
+    }
+
+    if (session.userId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access this chat session',
+      );
+    }
   }
 
   private async createSession(
