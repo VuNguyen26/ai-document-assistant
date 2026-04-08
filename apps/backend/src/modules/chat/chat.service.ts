@@ -304,7 +304,7 @@ export class ChatService {
     question: string,
     documentId?: string,
   ): Promise<string> {
-    const title = this.generateSessionTitle(question);
+    const title = await this.generateSmartSessionTitle(question);
 
     const session = await this.prisma.chatSession.create({
       data: {
@@ -447,4 +447,40 @@ Yêu cầu:
       );
     }
   }
+
+  private async generateSmartSessionTitle(question: string): Promise<string> {
+    const fallbackTitle = this.generateSessionTitle(question);
+
+    try {
+        const response = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        temperature: 0.2,
+        messages: [
+            {
+            role: 'system',
+            content: [
+                'You generate short chat titles.',
+                'Return ONLY the title.',
+                'No quotes.',
+                'Max 8 words.',
+                'Vietnamese.',
+            ].join(' '),
+            },
+            {
+            role: 'user',
+            content: `Tạo tiêu đề ngắn cho câu hỏi:\n${question}`,
+            },
+        ],
+        });
+
+        const title = response.choices?.[0]?.message?.content?.trim();
+
+        if (!title) return fallbackTitle;
+
+        return title.length > 255 ? title.slice(0, 255) : title;
+    } catch (error) {
+        console.error('Generate title failed:', error);
+        return fallbackTitle;
+    }
+    }
 }
