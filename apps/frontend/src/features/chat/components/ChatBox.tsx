@@ -10,6 +10,7 @@ import {
 } from "../api/chat.api";
 import { useChatStream } from "../hooks/useChatStream";
 import type { ChatMessage, ChatSession } from "../types/chat.types";
+import MarkdownMessage from "./MarkdownMessage";
 
 type ChatBoxProps = {
   documentId: string;
@@ -451,30 +452,38 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
                 const isUser = message.role === "USER";
 
                 return (
-                  <div
+                    <div
                     key={message.id}
                     className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-3xl px-4 py-3 shadow-sm md:max-w-[75%] ${
-                        isUser
-                          ? "bg-slate-900 text-white"
-                          : "border border-slate-200 bg-white text-slate-800"
-                      }`}
                     >
-                      <div className="mb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
+                    <div
+                        className={`max-w-[85%] rounded-3xl px-4 py-3 shadow-sm md:max-w-[75%] ${
+                        isUser
+                            ? "bg-slate-900 text-white"
+                            : "border border-slate-200 bg-white text-slate-800"
+                        }`}
+                    >
+                        <div className="mb-1 text-xs font-semibold uppercase tracking-wide opacity-70">
                         {isUser ? "You" : "Assistant"}
-                      </div>
-                      <div className="whitespace-pre-wrap break-words text-sm leading-7">
-                        {message.content || (isStreaming && !isUser ? "Đang trả lời..." : "")}
-                      </div>
-                      <div className="mt-2 text-[11px] opacity-60">
+                        </div>
+
+                        <div className="break-words text-sm leading-7">
+                        {isUser ? (
+                            <div className="whitespace-pre-wrap">{message.content}</div>
+                        ) : (
+                            <MarkdownMessage
+                            content={message.content || (isStreaming ? "Đang trả lời..." : "")}
+                            />
+                        )}
+                        </div>
+
+                        <div className="mt-2 text-[11px] opacity-60">
                         {formatTime(message.createdAt)}
-                      </div>
+                        </div>
                     </div>
-                  </div>
+                    </div>
                 );
-              })}
+                })}
               <div ref={messagesEndRef} />
             </div>
           )}
