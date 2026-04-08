@@ -10,6 +10,7 @@ import { ExtractionModule } from './modules/extraction/extraction.module';
 import { ChunksModule } from './modules/chunks/chunks.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 import { SearchModule } from './modules/search/search.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SearchModule } from './modules/search/search.module';
     ChunksModule,
     EmbeddingsModule,
     SearchModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
