@@ -1,7 +1,9 @@
 "use client";
 
 import { logout } from "@/features/auth/api/auth.api";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { getAccessToken } from "@/lib/auth/token-storage";
+import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,6 +22,7 @@ import ChatComposer from "./ChatComposer";
 import ChatHeader from "./ChatHeader";
 import ChatMessageList from "./ChatMessageList";
 import ChatSidebar from "./ChatSidebar";
+import MobileChatSessionsSheet from "./MobileChatSessionsSheet";
 
 type ChatBoxProps = {
   documentId: string;
@@ -55,16 +58,21 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
+    null,
+  );
   const [renameValue, setRenameValue] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const activeSession = useMemo(
     () => sessions.find((session) => session.id === activeSessionId) || null,
-    [sessions, activeSessionId]
+    [sessions, activeSessionId],
   );
 
   const refreshSessions = useCallback(async () => {
@@ -92,7 +100,9 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     const token = getAccessToken();
 
     if (!token) {
-      router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      router.replace(
+        `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+      );
       return;
     }
 
@@ -109,8 +119,18 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       try {
         const data = await refreshSessions();
 
-        if (data.length > 0) {
-          await loadSessionMessages(data[0].id);
+        const matchingSession =
+          data.find(
+            (session) =>
+              "documentId" in session &&
+              String(
+                (session as ChatSession & { documentId?: string | null })
+                  .documentId,
+              ) === String(documentId),
+          ) || data[0];
+
+        if (matchingSession) {
+          await loadSessionMessages(matchingSession.id);
         } else {
           setMessages([]);
           setActiveSessionId(null);
@@ -123,7 +143,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     };
 
     void init();
-  }, [isCheckingAuth, loadSessionMessages, refreshSessions]);
+  }, [documentId, isCheckingAuth, loadSessionMessages, refreshSessions]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -165,26 +185,44 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
         let targetSessionId = activeSessionId;
 
-        if (!targetSessionId && updatedSessions.length > 0) {
-          targetSessionId = updatedSessions[0].id;
-          setActiveSessionId(targetSessionId);
+        if (!targetSessionId) {
+          const matchingSession =
+            updatedSessions.find(
+              (session) =>
+                "documentId" in session &&
+                String(
+                  (session as ChatSession & { documentId?: string | null })
+                    .documentId,
+                ) === String(documentId),
+            ) || updatedSessions[0];
+
+          if (matchingSession) {
+            targetSessionId = matchingSession.id;
+            setActiveSessionId(targetSessionId);
+          }
         }
 
         if (targetSessionId) {
           const latestMessages = await getChatMessages(targetSessionId);
           setMessages(latestMessages);
+          toast.success("Đã cập nhật hội thoại.");
         }
       } catch (err) {
-        setError((err as Error).message || "Không thể đồng bộ dữ liệu sau khi stream");
+        setError(
+          (err as Error).message || "Không thể đồng bộ dữ liệu sau khi stream",
+        );
       }
     },
     onError: (message: string) => {
       if (message.toLowerCase().includes("unauthorized")) {
-        router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        router.replace(
+          `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
+        );
         return;
       }
 
       setError(message);
+      toast.error(message);
     },
   });
 
@@ -193,6 +231,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     setMessages([]);
     setError(null);
     setInput("");
+    toast.success("Sẵn sàng cho cuộc trò chuyện mới.");
   }, []);
 
   const handleSend = useCallback(async () => {
@@ -214,7 +253,9 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
         documentId,
       });
     } catch (err) {
-      setError((err as Error).message || "Không gửi được câu hỏi");
+      const message = (err as Error).message || "Không gửi được câu hỏi";
+      setError(message);
+      toast.error(message);
     }
   }, [activeSessionId, documentId, input, isStreaming, startStream]);
 
@@ -226,42 +267,74 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       try {
         const updated = await renameChatSession(sessionId, { title });
         setSessions((prev) =>
-          prev.map((session) => (session.id === sessionId ? updated : session))
+          prev.map((session) => (session.id === sessionId ? updated : session)),
         );
         setRenamingSessionId(null);
         setRenameValue("");
+        toast.success("Đổi tên cuộc trò chuyện thành công.");
       } catch (err) {
-        setError((err as Error).message || "Không đổi được tên cuộc trò chuyện");
+        const message =
+          (err as Error).message || "Không đổi được tên cuộc trò chuyện";
+        setError(message);
+        toast.error(message);
       }
     },
-    [renameValue]
+    [renameValue],
   );
 
-  const handleDelete = useCallback(
-    async (sessionId: string) => {
-      const confirmed = window.confirm("Bạn có chắc muốn xoá cuộc trò chuyện này không?");
-      if (!confirmed) return;
+  const handleDelete = useCallback((sessionId: string) => {
+    const target =
+      sessions.find((session) => session.id === sessionId) || null;
+    setDeleteTarget(target);
+  }, [sessions]);
 
-      try {
-        await deleteChatSession(sessionId);
+  const confirmDeleteSession = useCallback(async () => {
+    if (!deleteTarget) return;
 
-        const nextSessions = sessions.filter((session) => session.id !== sessionId);
-        setSessions(nextSessions);
+    try {
+      setIsDeletingSession(true);
+      await deleteChatSession(deleteTarget.id);
 
-        if (activeSessionId === sessionId) {
-          if (nextSessions.length > 0) {
-            await loadSessionMessages(nextSessions[0].id);
-          } else {
-            setActiveSessionId(null);
-            setMessages([]);
-          }
+      const nextSessions = sessions.filter(
+        (session) => session.id !== deleteTarget.id,
+      );
+      setSessions(nextSessions);
+
+      if (activeSessionId === deleteTarget.id) {
+        const matchingSession =
+          nextSessions.find(
+            (session) =>
+              "documentId" in session &&
+              String(
+                (session as ChatSession & { documentId?: string | null })
+                  .documentId,
+              ) === String(documentId),
+          ) || nextSessions[0];
+
+        if (matchingSession) {
+          await loadSessionMessages(matchingSession.id);
+        } else {
+          setActiveSessionId(null);
+          setMessages([]);
         }
-      } catch (err) {
-        setError((err as Error).message || "Không xoá được cuộc trò chuyện");
       }
-    },
-    [activeSessionId, loadSessionMessages, sessions]
-  );
+
+      setDeleteTarget(null);
+      toast.success("Đã xóa cuộc trò chuyện.");
+    } catch (err) {
+      const message = (err as Error).message || "Không xoá được cuộc trò chuyện";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setIsDeletingSession(false);
+    }
+  }, [
+    activeSessionId,
+    deleteTarget,
+    documentId,
+    loadSessionMessages,
+    sessions,
+  ]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -282,8 +355,57 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <ChatSidebar
+    <>
+      <div className="flex h-[calc(100vh-120px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <ChatSidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          isLoading={isLoadingSessions}
+          renamingSessionId={renamingSessionId}
+          renameValue={renameValue}
+          onRenameValueChange={setRenameValue}
+          onNewChat={handleNewChat}
+          onSelectSession={(sessionId) => void loadSessionMessages(sessionId)}
+          onStartRename={(session) => {
+            setRenamingSessionId(session.id);
+            setRenameValue(session.title);
+          }}
+          onCancelRename={() => {
+            setRenamingSessionId(null);
+            setRenameValue("");
+          }}
+          onConfirmRename={(sessionId) => void handleRename(sessionId)}
+          onDeleteSession={(sessionId) => handleDelete(sessionId)}
+        />
+
+        <section className="flex min-w-0 flex-1 flex-col">
+          <ChatHeader
+            title={activeSession?.title || "Document Chat"}
+            documentId={documentId}
+            onLogout={handleLogout}
+            onOpenSessions={() => setMobileSessionsOpen(true)}
+          />
+
+          <ChatMessageList
+            messages={messages}
+            isLoading={isLoadingMessages}
+            isStreaming={isStreaming}
+            error={error}
+            messagesEndRef={messagesEndRef}
+          />
+
+          <ChatComposer
+            input={input}
+            isStreaming={isStreaming}
+            textareaRef={textareaRef}
+            onInputChange={setInput}
+            onSend={() => void handleSend()}
+          />
+        </section>
+      </div>
+
+      <MobileChatSessionsSheet
+        open={mobileSessionsOpen}
         sessions={sessions}
         activeSessionId={activeSessionId}
         isLoading={isLoadingSessions}
@@ -301,32 +423,21 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
           setRenameValue("");
         }}
         onConfirmRename={(sessionId) => void handleRename(sessionId)}
-        onDeleteSession={(sessionId) => void handleDelete(sessionId)}
+        onDeleteSession={(sessionId) => handleDelete(sessionId)}
+        onClose={() => setMobileSessionsOpen(false)}
       />
 
-      <section className="flex min-w-0 flex-1 flex-col">
-        <ChatHeader
-          title={activeSession?.title || "Document Chat"}
-          documentId={documentId}
-          onLogout={handleLogout}
-        />
-
-        <ChatMessageList
-          messages={messages}
-          isLoading={isLoadingMessages}
-          isStreaming={isStreaming}
-          error={error}
-          messagesEndRef={messagesEndRef}
-        />
-
-        <ChatComposer
-          input={input}
-          isStreaming={isStreaming}
-          textareaRef={textareaRef}
-          onInputChange={setInput}
-          onSend={() => void handleSend()}
-        />
-      </section>
-    </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Xóa cuộc trò chuyện?"
+        description={`Session "${deleteTarget?.title || ""}" sẽ bị xóa khỏi danh sách hội thoại.`}
+        confirmText="Xóa session"
+        cancelText="Hủy"
+        tone="danger"
+        loading={isDeletingSession}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => void confirmDeleteSession()}
+      />
+    </>
   );
 }

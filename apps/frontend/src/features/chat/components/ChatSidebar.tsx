@@ -32,13 +32,14 @@ export default function ChatSidebar({
   onDeleteSession,
 }: ChatSidebarProps) {
   return (
-    <aside className="hidden w-[320px] shrink-0 border-r border-slate-200 bg-slate-50/80 md:flex md:flex-col">
+    <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-slate-50 lg:flex lg:flex-col">
       <div className="border-b border-slate-200 p-4">
         <button
+          type="button"
           onClick={onNewChat}
           className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
-          + New chat
+          + Cuộc trò chuyện mới
         </button>
       </div>
 
@@ -48,78 +49,97 @@ export default function ChatSidebar({
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="h-20 animate-pulse rounded-2xl bg-slate-200"
+                className="h-16 animate-pulse rounded-2xl border border-slate-200 bg-white"
               />
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
-            Chưa có cuộc trò chuyện nào.
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-xl">
+              📝
+            </div>
+            <p className="text-sm font-medium text-slate-700">
+              Chưa có session nào
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Hãy gửi câu hỏi đầu tiên để tạo cuộc trò chuyện mới.
+            </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {sessions.map((session) => {
-              const isActive = session.id === activeSessionId;
+              const active = session.id === activeSessionId;
               const isRenaming = renamingSessionId === session.id;
 
               return (
                 <div
                   key={session.id}
-                  className={`group rounded-2xl border p-3 transition ${
-                    isActive
+                  className={`rounded-2xl border p-3 transition ${
+                    active
                       ? "border-slate-900 bg-white shadow-sm"
-                      : "border-transparent bg-transparent hover:border-slate-200 hover:bg-white"
+                      : "border-slate-200 bg-white hover:border-slate-300"
                   }`}
                 >
                   {isRenaming ? (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <input
+                        type="text"
                         value={renameValue}
                         onChange={(e) => onRenameValueChange(e.target.value)}
-                        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
-                        placeholder="Nhập tên mới..."
+                        className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
+                        placeholder="Nhập tiêu đề mới"
                       />
-                      <div className="flex gap-2">
+
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => onConfirmRename(session.id)}
-                          className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                          type="button"
+                          onClick={onCancelRename}
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                         >
-                          Lưu
+                          Hủy
                         </button>
                         <button
-                          onClick={onCancelRename}
-                          className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                          type="button"
+                          onClick={() => onConfirmRename(session.id)}
+                          className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
                         >
-                          Huỷ
+                          Lưu
                         </button>
                       </div>
                     </div>
                   ) : (
                     <>
                       <button
+                        type="button"
                         onClick={() => onSelectSession(session.id)}
                         className="w-full text-left"
                       >
-                        <div className="line-clamp-2 text-sm font-semibold text-slate-900">
-                          {session.title || "Untitled chat"}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {new Date(session.updatedAt).toLocaleString("vi-VN")}
-                        </div>
+                        <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                          {session.title}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-400">
+                          {new Intl.DateTimeFormat("vi-VN", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(new Date(session.updatedAt))}
+                        </p>
                       </button>
 
-                      <div className="mt-3 flex gap-2 opacity-100 md:opacity-0 md:transition md:group-hover:opacity-100">
+                      <div className="mt-3 flex items-center justify-end gap-2">
                         <button
+                          type="button"
                           onClick={() => onStartRename(session)}
-                          className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                         >
-                          Rename
+                          Đổi tên
                         </button>
+
                         <button
+                          type="button"
                           onClick={() => onDeleteSession(session.id)}
-                          className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                          className="rounded-xl border border-rose-200 px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
                         >
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </>

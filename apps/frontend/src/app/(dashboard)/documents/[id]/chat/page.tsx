@@ -1,17 +1,15 @@
-import ChatBox from "@/features/chat/components/ChatBox";
+import ChatDocumentPageView from "@/features/chat/components/ChatDocumentPageView";
 
-type ChatPageProps = {
+type DocumentChatPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
 
-export default async function DocumentChatPage({ params }: ChatPageProps) {
+export default async function DocumentChatPage({
+  params,
+}: DocumentChatPageProps) {
   const { id } = await params;
 
-  return (
-    <div className="p-4 md:p-6">
-      <ChatBox documentId={id} />
-    </div>
-  );
+  return <ChatDocumentPageView documentId={id} />;
 }
