@@ -378,4 +378,38 @@ Yêu cầu:
       );
     }
   }
+
+  async deleteSession(
+    userId: string,
+    sessionId: string,
+    ): Promise<{
+    success: true;
+    message: string;
+    data: {
+        id: string;
+    };
+    }> {
+    await this.assertSessionOwnership(sessionId, userId);
+
+    await this.prisma.$transaction([
+        this.prisma.chatMessage.deleteMany({
+        where: {
+            sessionId,
+        },
+        }),
+        this.prisma.chatSession.delete({
+        where: {
+            id: sessionId,
+        },
+        }),
+    ]);
+
+    return {
+        success: true,
+        message: 'Chat session deleted successfully',
+        data: {
+        id: sessionId,
+        },
+    };
+    }
 }
