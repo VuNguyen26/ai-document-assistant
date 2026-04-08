@@ -92,11 +92,11 @@ export class ChatService {
     success: true;
     message: string;
     data: Array<{
-    id: string;
-    title: string | null;
-    documentId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+      id: string;
+      title: string | null;
+      documentId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
     }>;
     meta: {
       page: number;
@@ -181,6 +181,75 @@ export class ChatService {
       success: true,
       message: 'Chat messages fetched successfully',
       data: messages,
+    };
+  }
+
+  async deleteSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<{
+    success: true;
+    message: string;
+    data: {
+      id: string;
+    };
+  }> {
+    await this.assertSessionOwnership(sessionId, userId);
+
+    await this.prisma.$transaction([
+      this.prisma.chatMessage.deleteMany({
+        where: {
+          sessionId,
+        },
+      }),
+      this.prisma.chatSession.delete({
+        where: {
+          id: sessionId,
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Chat session deleted successfully',
+      data: {
+        id: sessionId,
+      },
+    };
+  }
+
+  async updateSessionTitle(
+    userId: string,
+    sessionId: string,
+    dto: { title: string },
+  ): Promise<{
+    success: true;
+    message: string;
+    data: {
+      id: string;
+      title: string | null;
+    };
+  }> {
+    await this.assertSessionOwnership(sessionId, userId);
+
+    const updated = await this.prisma.chatSession.update({
+      where: {
+        id: sessionId,
+      },
+      data: {
+        title: dto.title,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Chat session updated successfully',
+      data: updated,
     };
   }
 
@@ -378,38 +447,4 @@ Yêu cầu:
       );
     }
   }
-
-  async deleteSession(
-    userId: string,
-    sessionId: string,
-    ): Promise<{
-    success: true;
-    message: string;
-    data: {
-        id: string;
-    };
-    }> {
-    await this.assertSessionOwnership(sessionId, userId);
-
-    await this.prisma.$transaction([
-        this.prisma.chatMessage.deleteMany({
-        where: {
-            sessionId,
-        },
-        }),
-        this.prisma.chatSession.delete({
-        where: {
-            id: sessionId,
-        },
-        }),
-    ]);
-
-    return {
-        success: true,
-        message: 'Chat session deleted successfully',
-        data: {
-        id: sessionId,
-        },
-    };
-    }
 }

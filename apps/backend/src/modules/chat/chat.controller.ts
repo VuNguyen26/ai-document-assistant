@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -14,6 +15,7 @@ import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.in
 import { AskQuestionDto } from './dto/ask-question.dto';
 import { ChatSessionMessagesParamDto } from './dto/chat-session-messages-param.dto';
 import { ListChatSessionsQueryDto } from './dto/list-chat-sessions-query.dto';
+import { UpdateChatSessionDto } from './dto/update-chat-session.dto';
 import { ChatService } from './chat.service';
 
 @Controller('chat')
@@ -57,5 +59,14 @@ export class ChatController {
     @Param() params: ChatSessionMessagesParamDto,
   ) {
     return this.chatService.deleteSession(user.id, params.id);
+  }
+
+  @Patch('sessions/:id')
+  async updateSession(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param() params: ChatSessionMessagesParamDto,
+    @Body() dto: UpdateChatSessionDto,
+  ) {
+    return this.chatService.updateSessionTitle(user.id, params.id, dto);
   }
 }
