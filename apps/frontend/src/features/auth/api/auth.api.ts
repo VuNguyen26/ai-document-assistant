@@ -1,7 +1,20 @@
+import {
+  clearAuthSession,
+  getAccessToken,
+  getRefreshToken,
+  setAuthSession,
+} from "@/lib/auth/token-storage";
 import type { ApiEnvelope, LoginPayload, LoginResponse } from "../types/auth.types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:4000/api/v1";
+
+type RefreshTokenResponse = {
+  accessToken: string;
+  refreshToken?: string;
+  accessTokenExpiresIn?: number;
+  refreshTokenExpiresIn?: number;
+};
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -41,8 +54,58 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  return apiFetch<LoginResponse>("/auth/login", {
+  const result = await apiFetch<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+
+  setAuthSession({
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken,
+    user: result.user,
+  });
+
+  return result;
+}
+
+export async function refreshAccessToken(): Promise<string> {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    throw new Error("No refresh token found");
+  }
+
+  const result = await apiFetch<RefreshTokenResponse>("/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({
+      refreshToken,
+    }),
+  });
+
+  setAuthSession({
+    accessToken: result.accessToken,
+    refreshToken: result.refreshToken ?? refreshToken,
+  });
+
+  return result.accessToken;
+}
+
+export async function logout(): Promise<void> {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    // ignore network/logout backend errors
+  } finally {
+    clearAuthSession();
+  }
 }

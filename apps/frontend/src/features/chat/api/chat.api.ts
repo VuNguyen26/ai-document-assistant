@@ -1,3 +1,5 @@
+import { refreshAccessToken } from "@/features/auth/api/auth.api";
+import { clearAuthSession, getAccessToken } from "@/lib/auth/token-storage";
 import type {
   ApiEnvelope,
   AskChatPayload,
@@ -10,39 +12,27 @@ import type {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:4000/api/v1";
 
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-
-  const possibleKeys = [
-    "accessToken",
-    "token",
-    "authToken",
-    "jwt",
-    "access_token",
-  ];
-
-  for (const key of possibleKeys) {
-    const value = localStorage.getItem(key);
-    if (value) return value;
-  }
+async function parseError(response: Response): Promise<string> {
+  let message = `Request failed with status ${response.status}`;
 
   try {
-    const authRaw = localStorage.getItem("auth");
-    if (authRaw) {
-      const parsed = JSON.parse(authRaw);
-      return parsed?.accessToken || parsed?.token || null;
-    }
+    const errorBody = await response.json();
+    message = errorBody?.message || errorBody?.error || message;
   } catch {
-    // ignore parse error
+    // ignore
   }
 
-  return null;
+  return message;
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getAuthToken();
+async function rawFetch(
+  path: string,
+  init?: RequestInit,
+  tokenOverride?: string | null
+): Promise<Response> {
+  const token = tokenOverride ?? getAccessToken();
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  return fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -51,16 +41,23 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
     cache: "no-store",
   });
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  let response = await rawFetch(path, init);
+
+  if (response.status === 401) {
+    try {
+      const newAccessToken = await refreshAccessToken();
+      response = await rawFetch(path, init, newAccessToken);
+    } catch {
+      clearAuthSession();
+      throw new Error("Unauthorized");
+    }
+  }
 
   if (!response.ok) {
-    let message = `Request failed with status ${response.status}`;
-    try {
-      const errorBody = await response.json();
-      message = errorBody?.message || errorBody?.error || message;
-    } catch {
-      // ignore
-    }
-    throw new Error(message);
+    throw new Error(await parseError(response));
   }
 
   const json = (await response.json()) as T | ApiEnvelope<T>;
@@ -112,15 +109,26 @@ export async function askChat(payload: AskChatPayload): Promise<AskChatResponse>
   });
 }
 
-export function buildStreamRequestInit(payload: AskChatPayload): RequestInit {
-  const token = getAuthToken();
+export async function buildAuthorizedStreamRequestInit(
+  payload: AskChatPayload
+): Promise<RequestInit> {
+  let accessToken = getAccessToken();
+
+  if (!accessToken) {
+    try {
+      accessToken = await refreshAccessToken();
+    } catch {
+      clearAuthSession();
+      throw new Error("Unauthorized");
+    }
+  }
 
   return {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify(payload),
   };

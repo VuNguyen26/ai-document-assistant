@@ -42,14 +42,10 @@ export default function LoginForm() {
     try {
       setIsSubmitting(true);
 
-      const result = await login({
+      await login({
         email: email.trim(),
         password,
-      });
-
-      localStorage.setItem("accessToken", result.accessToken);
-      localStorage.setItem("refreshToken", result.refreshToken);
-      localStorage.setItem("authUser", JSON.stringify(result.user));
+        });
 
       router.replace(redirectTo);
       router.refresh();

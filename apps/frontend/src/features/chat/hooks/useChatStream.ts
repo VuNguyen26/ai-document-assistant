@@ -1,8 +1,15 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { buildStreamRequestInit, getChatStreamUrl } from "../api/chat.api";
-import type { AskChatPayload, StreamEvent, UseChatStreamOptions } from "../types/chat.types";
+import {
+  buildAuthorizedStreamRequestInit,
+  getChatStreamUrl,
+} from "../api/chat.api";
+import type {
+  AskChatPayload,
+  StreamEvent,
+  UseChatStreamOptions,
+} from "../types/chat.types";
 
 function parseSseChunk(buffer: string): {
   events: StreamEvent[];
@@ -76,8 +83,10 @@ export function useChatStream(options?: UseChatStreamOptions) {
       abortControllerRef.current = controller;
 
       try {
+        const requestInit = await buildAuthorizedStreamRequestInit(payload);
+
         const response = await fetch(getChatStreamUrl(), {
-          ...buildStreamRequestInit(payload),
+          ...requestInit,
           signal: controller.signal,
         });
 
