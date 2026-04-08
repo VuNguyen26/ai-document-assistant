@@ -483,4 +483,147 @@ Yêu cầu:
         return fallbackTitle;
     }
     }
+
+      async streamQuestion(
+        userId: string,
+        dto: AskQuestionDto,
+        res: import('express').Response,
+    ): Promise<void> {
+        const question = dto.question.trim();
+        const topK = dto.topK ?? 5;
+
+        const sessionId = dto.sessionId
+        ? await this.ensureSessionOwnership(dto.sessionId, userId)
+        : await this.createSession(userId, question, dto.documentId);
+
+        const searchResult = await this.searchService.semanticSearch(userId, {
+        query: question,
+        documentId: dto.documentId,
+        topK,
+        });
+
+        const usedChunks = searchResult.results;
+        const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
+
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+
+        if (typeof res.flushHeaders === 'function') {
+        res.flushHeaders();
+        }
+
+        const sendEvent = (event: string, data: unknown) => {
+        res.write(`event: ${event}\n`);
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        };
+
+        sendEvent('meta', {
+        sessionId,
+        question,
+        documentId: dto.documentId ?? null,
+        documentIds,
+        topK,
+        usedChunks,
+        });
+
+        let answer =
+        'Không tìm thấy đủ thông tin liên quan trong tài liệu để trả lời câu hỏi này.';
+
+        try {
+        if (usedChunks.length === 0) {
+            sendEvent('delta', { content: answer });
+        } else {
+            const context = this.buildContext(usedChunks);
+            answer = await this.generateAnswerStream(question, context, sendEvent);
+        }
+
+        await this.persistConversation({
+            sessionId,
+            userQuestion: question,
+            assistantAnswer: answer,
+        });
+
+        sendEvent('done', {
+            sessionId,
+            answer,
+        });
+
+        res.end();
+        } catch (error) {
+        console.error('Failed to stream RAG answer:', error);
+
+        sendEvent('error', {
+            message: 'Failed to stream answer from retrieved context',
+        });
+
+        res.end();
+        }
+    }
+
+      private async generateAnswerStream(
+        question: string,
+        context: string,
+        sendEvent: (event: string, data: unknown) => void,
+    ): Promise<string> {
+        try {
+        const stream = await this.openai.chat.completions.create({
+            model: this.chatModel,
+            temperature: 0.2,
+            stream: true,
+            messages: [
+            {
+                role: 'system',
+                content: [
+                'You are a retrieval-augmented assistant.',
+                'Answer only from the provided context.',
+                'Do not invent facts that are not supported by the context.',
+                'If the context is insufficient, clearly say that the document does not provide enough information.',
+                'Prefer concise, clear, and accurate answers in Vietnamese.',
+                ].join(' '),
+            },
+            {
+                role: 'user',
+                content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:
+
+    ${context}
+
+    Câu hỏi:
+    ${question}
+
+    Yêu cầu:
+    - Chỉ trả lời dựa trên ngữ cảnh ở trên.
+    - Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.
+    - Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
+            },
+            ],
+        });
+
+        let fullAnswer = '';
+
+        for await (const chunk of stream) {
+            const delta = chunk.choices?.[0]?.delta?.content ?? '';
+
+            if (!delta) {
+            continue;
+            }
+
+            fullAnswer += delta;
+            sendEvent('delta', { content: delta });
+        }
+
+        const finalAnswer = fullAnswer.trim();
+
+        if (!finalAnswer) {
+            throw new InternalServerErrorException('LLM returned empty streamed answer');
+        }
+
+        return finalAnswer;
+        } catch (error) {
+        console.error('Failed to generate streamed RAG answer:', error);
+        throw new InternalServerErrorException(
+            'Failed to generate streamed answer from retrieved context',
+        );
+        }
+    }
 }

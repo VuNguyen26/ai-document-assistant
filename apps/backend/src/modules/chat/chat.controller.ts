@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -35,6 +37,15 @@ export class ChatController {
       message: 'Question answered successfully',
       data,
     };
+  }
+
+  @Post('ask/stream')
+  async askQuestionStream(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: AskQuestionDto,
+    @Res() res: Response,
+  ) {
+    return this.chatService.streamQuestion(user.id, dto, res);
   }
 
   @Get('sessions')
