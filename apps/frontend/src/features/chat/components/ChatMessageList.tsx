@@ -1,7 +1,9 @@
 "use client";
 
+import toast from "react-hot-toast";
 import type { RefObject } from "react";
 import type { ChatMessage } from "../types/chat.types";
+import ChatCitations from "./ChatCitations";
 import MarkdownMessage from "./MarkdownMessage";
 
 type ChatMessageListProps = {
@@ -11,6 +13,15 @@ type ChatMessageListProps = {
   error: string | null;
   messagesEndRef: RefObject<HTMLDivElement | null>;
 };
+
+async function copyToClipboard(value: string, successMessage: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(successMessage);
+  } catch {
+    toast.error("Không thể copy vào clipboard.");
+  }
+}
 
 export default function ChatMessageList({
   messages,
@@ -73,8 +84,29 @@ export default function ChatMessageList({
                     : "border border-slate-200 bg-white text-slate-800"
                 }`}
               >
-                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] opacity-60">
-                  {isUser ? "User" : "Assistant"}
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] opacity-60">
+                    {isUser ? "User" : "Assistant"}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyToClipboard(
+                        message.content,
+                        isUser
+                          ? "Đã copy câu hỏi."
+                          : "Đã copy câu trả lời.",
+                      )
+                    }
+                    className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
+                      isUser
+                        ? "border border-white/20 bg-white/10 text-white hover:bg-white/15"
+                        : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    Copy
+                  </button>
                 </div>
 
                 {isUser ? (
@@ -82,7 +114,12 @@ export default function ChatMessageList({
                     {message.content}
                   </p>
                 ) : (
-                  <MarkdownMessage content={message.content} />
+                  <>
+                    <MarkdownMessage content={message.content} />
+                    {message.citations?.length ? (
+                      <ChatCitations citations={message.citations} />
+                    ) : null}
+                  </>
                 )}
               </div>
             </div>

@@ -19,6 +19,15 @@ type ApiEnvelope<T> = {
   data: T;
 };
 
+type GetDocumentsParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  sortBy?: "createdAt" | "updatedAt" | "title" | "status";
+  sortOrder?: "asc" | "desc";
+};
+
 async function parseError(response: Response): Promise<string> {
   let message = `Request failed with status ${response.status}`;
 
@@ -86,12 +95,32 @@ function unwrapData<T>(result: T | ApiEnvelope<T>): T {
 }
 
 export async function getDocuments(
-  page = 1,
-  limit = 12,
+  params: GetDocumentsParams = {},
 ): Promise<DocumentsListResponse> {
+  const searchParams = new URLSearchParams();
+
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("limit", String(params.limit ?? 12));
+
+  if (params.search?.trim()) {
+    searchParams.set("search", params.search.trim());
+  }
+
+  if (params.status && params.status !== "ALL") {
+    searchParams.set("status", params.status);
+  }
+
+  if (params.sortBy) {
+    searchParams.set("sortBy", params.sortBy);
+  }
+
+  if (params.sortOrder) {
+    searchParams.set("sortOrder", params.sortOrder);
+  }
+
   const result = await apiFetch<
     DocumentsListResponse | ApiEnvelope<DocumentsListResponse>
-  >(`/documents?page=${page}&limit=${limit}`, {
+  >(`/documents?${searchParams.toString()}`, {
     method: "GET",
   });
 
@@ -151,6 +180,30 @@ export async function deleteDocument(documentId: string): Promise<DocumentItem> 
       method: "DELETE",
     },
   );
+
+  return unwrapData(result);
+}
+
+export async function processDocument(
+  documentId: string,
+): Promise<DocumentActionResult> {
+  const result = await apiFetch<
+    DocumentActionResult | ApiEnvelope<DocumentActionResult>
+  >(`/documents/${documentId}/process`, {
+    method: "POST",
+  });
+
+  return unwrapData(result);
+}
+
+export async function reprocessDocument(
+  documentId: string,
+): Promise<DocumentActionResult> {
+  const result = await apiFetch<
+    DocumentActionResult | ApiEnvelope<DocumentActionResult>
+  >(`/documents/${documentId}/reprocess`, {
+    method: "POST",
+  });
 
   return unwrapData(result);
 }

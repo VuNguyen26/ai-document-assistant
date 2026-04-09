@@ -21,12 +21,12 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { ChunksService } from '../chunks/chunks.service';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { ExtractionService } from '../extraction/extraction.service';
 import { DocumentsService } from './documents.service';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import type { UploadedFile as UploadedDocumentFile } from './interfaces/uploaded-file.interface';
-import { EmbeddingsService } from '../embeddings/embeddings.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('documents')
@@ -79,6 +79,24 @@ export class DocumentsController {
   }
 
   @HttpCode(200)
+  @Post(':id/process')
+  process(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.documentsService.processDocument(user.id, id);
+  }
+
+  @HttpCode(200)
+  @Post(':id/reprocess')
+  reprocess(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.documentsService.reprocessDocument(user.id, id);
+  }
+
+  @HttpCode(200)
   @Post(':id/extract')
   extract(
     @CurrentUser() user: AuthenticatedUser,
@@ -113,6 +131,7 @@ export class DocumentsController {
     return this.documentsService.softDelete(user.id, id);
   }
 
+  @HttpCode(200)
   @Post(':id/embed')
   embed(
     @CurrentUser() user: AuthenticatedUser,

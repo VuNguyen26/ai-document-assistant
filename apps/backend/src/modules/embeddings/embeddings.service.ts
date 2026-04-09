@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { DocumentStatus } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import OpenAI from 'openai';
 
@@ -60,8 +62,18 @@ export class EmbeddingsService {
     });
 
     if (chunks.length === 0) {
-      throw new NotFoundException('No chunks found for this document');
+      throw new BadRequestException(
+        'No chunks found for this document. Please chunk the document first.',
+      );
     }
+
+    await this.prisma.document.update({
+      where: { id: documentId },
+      data: {
+        status: DocumentStatus.PROCESSING,
+        errorMessage: null,
+      },
+    });
 
     try {
       for (const chunk of chunks) {
@@ -74,7 +86,9 @@ export class EmbeddingsService {
         const embedding = response.data[0]?.embedding;
 
         if (!embedding || embedding.length === 0) {
-          throw new Error(`Empty embedding returned for chunk ${chunk.chunkIndex}`);
+          throw new Error(
+            `Empty embedding returned for chunk ${chunk.chunkIndex}`,
+          );
         }
 
         const vectorLiteral = `[${embedding.join(',')}]`;
@@ -100,10 +114,19 @@ export class EmbeddingsService {
         );
       }
 
+      await this.prisma.document.update({
+        where: { id: documentId },
+        data: {
+          status: DocumentStatus.READY,
+          errorMessage: null,
+        },
+      });
+
       return {
         message: 'Embeddings created successfully',
         data: {
           documentId,
+          status: DocumentStatus.READY,
           chunkCount: chunks.length,
         },
       };
@@ -113,9 +136,26 @@ export class EmbeddingsService {
       const message =
         error instanceof Error ? error.message : 'Unknown embedding error';
 
+      await this.markDocumentFailed(documentId, message);
+
       throw new InternalServerErrorException(
         `Failed to create embeddings: ${message}`,
       );
     }
+  }
+
+  private async markDocumentFailed(
+    documentId: string,
+    errorMessage?: string,
+  ): Promise<void> {
+    await this.prisma.document.update({
+      where: {
+        id: documentId,
+      },
+      data: {
+        status: DocumentStatus.FAILED,
+        errorMessage: errorMessage ?? 'Unknown embedding error',
+      },
+    });
   }
 }

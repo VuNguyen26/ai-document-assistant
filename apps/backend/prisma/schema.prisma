@@ -59,6 +59,8 @@ model RefreshToken {
 enum DocumentStatus {
   UPLOADED
   PROCESSING
+  EXTRACTED
+  CHUNKED
   READY
   FAILED
   DELETED

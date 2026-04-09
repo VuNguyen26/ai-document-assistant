@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { deleteDocument, getDocuments } from "../api/documents.api";
-import type { DocumentItem } from "../types/documents.types";
+import type {
+  DocumentItem,
+  DocumentsListResponse,
+} from "../types/documents.types";
 import DocumentsGrid from "./DocumentsGrid";
 import DocumentsToolbar from "./DocumentsToolbar";
 import UploadDocument from "./UploadDocument";
@@ -14,19 +18,56 @@ const PAGE_SIZE = 12;
 
 export default function DocumentsPageView() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [summary, setSummary] = useState<DocumentsListResponse["summary"]>({
+    total: 0,
+    ready: 0,
+    failed: 0,
+    incomplete: 0,
+  });
+  const [pagination, setPagination] = useState<DocumentsListResponse["pagination"]>(
+    {
+      page: 1,
+      limit: PAGE_SIZE,
+      total: 0,
+      totalPages: 1,
+    },
+  );
+
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [sortBy, setSortBy] = useState<
+    "createdAt" | "updatedAt" | "title" | "status"
+  >("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
-  async function loadDocuments() {
+  async function loadDocuments(
+    nextPage = page,
+    nextSearch = debouncedSearch,
+    nextStatus = status,
+    nextSortBy = sortBy,
+    nextSortOrder = sortOrder,
+  ) {
     try {
       setLoading(true);
-      const data = await getDocuments(1, 100);
+
+      const data = await getDocuments({
+        page: nextPage,
+        limit: PAGE_SIZE,
+        search: nextSearch,
+        status: nextStatus,
+        sortBy: nextSortBy,
+        sortOrder: nextSortOrder,
+      });
+
       setDocuments(data.items);
+      setPagination(data.pagination);
+      setSummary(data.summary);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -46,7 +87,18 @@ export default function DocumentsPageView() {
       await deleteDocument(deleteTarget.id);
       toast.success("Đã xóa tài liệu.");
       setDeleteTarget(null);
-      await loadDocuments();
+
+      const targetPage =
+        documents.length === 1 && page > 1 ? page - 1 : page;
+
+      setPage(targetPage);
+      await loadDocuments(
+        targetPage,
+        debouncedSearch,
+        status,
+        sortBy,
+        sortOrder,
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Xóa tài liệu thất bại",
@@ -57,51 +109,36 @@ export default function DocumentsPageView() {
   }
 
   useEffect(() => {
-    loadDocuments();
-  }, []);
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 350);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchInput]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, status]);
+  }, [debouncedSearch, status, sortBy, sortOrder]);
 
-  const stats = useMemo(() => {
-    const total = documents.length;
-    const ready = documents.filter((item) => item.status === "READY").length;
-    const failed = documents.filter((item) => item.status === "FAILED").length;
-    const processing = documents.filter((item) =>
-      ["UPLOADED", "PROCESSING", "EXTRACTING", "CHUNKING", "EMBEDDING"].includes(
-        item.status,
-      ),
-    ).length;
+  useEffect(() => {
+    loadDocuments(page, debouncedSearch, status, sortBy, sortOrder);
+  }, [page, debouncedSearch, status, sortBy, sortOrder]);
 
-    return { total, ready, failed, processing };
-  }, [documents]);
-
-  const filteredDocuments = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-
-    return documents.filter((document) => {
-      const matchesKeyword =
-        !keyword ||
-        document.title.toLowerCase().includes(keyword) ||
-        document.originalFilename.toLowerCase().includes(keyword);
-
-      const matchesStatus = status === "ALL" || document.status === status;
-
-      return matchesKeyword && matchesStatus;
-    });
-  }, [documents, search, status]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredDocuments.length / PAGE_SIZE));
-
-  const paginatedDocuments = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return filteredDocuments.slice(start, start + PAGE_SIZE);
-  }, [filteredDocuments, page]);
+  const hasFilters = useMemo(() => {
+    return (
+      debouncedSearch.length > 0 ||
+      status !== "ALL" ||
+      sortBy !== "createdAt" ||
+      sortOrder !== "desc"
+    );
+  }, [debouncedSearch, status, sortBy, sortOrder]);
 
   function handleResetFilters() {
-    setSearch("");
+    setSearchInput("");
+    setDebouncedSearch("");
     setStatus("ALL");
+    setSortBy("createdAt");
+    setSortOrder("desc");
     setPage(1);
   }
 
@@ -127,8 +164,8 @@ export default function DocumentsPageView() {
                 Documents Workspace
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                Quản lý tài liệu, theo dõi trạng thái xử lý và chuẩn bị dữ liệu cho
-                chat grounded bằng AI.
+                Quản lý tài liệu, theo dõi trạng thái xử lý và chuẩn bị dữ liệu
+                cho chat grounded bằng AI.
               </p>
             </div>
 
@@ -138,7 +175,7 @@ export default function DocumentsPageView() {
                   Total
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {stats.total}
+                  {summary.total}
                 </p>
               </div>
 
@@ -147,16 +184,16 @@ export default function DocumentsPageView() {
                   Ready
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-emerald-600">
-                  {stats.ready}
+                  {summary.ready}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Processing
+                  Incomplete
                 </p>
-                <p className="mt-1 text-2xl font-semibold text-blue-600">
-                  {stats.processing}
+                <p className="mt-1 text-2xl font-semibold text-amber-600">
+                  {summary.incomplete}
                 </p>
               </div>
 
@@ -165,25 +202,32 @@ export default function DocumentsPageView() {
                   Failed
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-rose-600">
-                  {stats.failed}
+                  {summary.failed}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <UploadDocument onUploaded={loadDocuments} />
-          </div>
-
-          <div className="mb-6">
+          <div className="mb-6 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
             <DocumentsToolbar
-              search={search}
+              search={searchInput}
               status={status}
-              total={documents.length}
-              filteredCount={filteredDocuments.length}
-              onSearchChange={setSearch}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              total={summary.total}
+              filteredCount={pagination.total}
+              onSearchChange={setSearchInput}
               onStatusChange={setStatus}
+              onSortByChange={setSortBy}
+              onSortOrderChange={setSortOrder}
               onReset={handleResetFilters}
+            />
+
+            <UploadDocument
+              onUploaded={async () => {
+                setPage(1);
+                await loadDocuments(1, debouncedSearch, status, sortBy, sortOrder);
+              }}
             />
           </div>
 
@@ -199,44 +243,63 @@ export default function DocumentsPageView() {
           ) : (
             <>
               <DocumentsGrid
-                documents={paginatedDocuments}
+                documents={documents}
                 onDelete={(documentId) => {
                   const target =
-                    documents.find((doc) => doc.id === documentId) || null;
+                    documents.find((item) => item.id === documentId) || null;
                   setDeleteTarget(target);
                 }}
               />
 
-              {filteredDocuments.length > PAGE_SIZE ? (
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {documents.length === 0 ? (
+                <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-xl">
+                    📂
+                  </div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Không có tài liệu nào phù hợp
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    {hasFilters
+                      ? "Hãy thử đổi từ khóa, trạng thái hoặc kiểu sắp xếp."
+                      : "Anh có thể upload tài liệu đầu tiên để bắt đầu."}
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row">
                   <p className="text-sm text-slate-500">
-                    Trang <span className="font-semibold text-slate-800">{page}</span> /{" "}
-                    <span className="font-semibold text-slate-800">{totalPages}</span>
+                    Trang{" "}
+                    <span className="font-semibold text-slate-900">
+                      {pagination.page}
+                    </span>{" "}
+                    / {pagination.totalPages}
                   </p>
 
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                      disabled={page === 1}
+                      disabled={pagination.page <= 1}
                       className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      ← Trước
+                      Trang trước
                     </button>
 
                     <button
                       type="button"
                       onClick={() =>
-                        setPage((prev) => Math.min(totalPages, prev + 1))
+                        setPage((prev) =>
+                          Math.min(pagination.totalPages, prev + 1),
+                        )
                       }
-                      disabled={page === totalPages}
+                      disabled={pagination.page >= pagination.totalPages}
                       className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Sau →
+                      Trang sau
                     </button>
                   </div>
                 </div>
-              ) : null}
+              )}
             </>
           )}
         </div>
@@ -244,14 +307,19 @@ export default function DocumentsPageView() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Xóa tài liệu?"
-        description={`Tài liệu "${deleteTarget?.title || ""}" sẽ bị xóa khỏi danh sách hiện tại.`}
-        confirmText="Xóa tài liệu"
-        cancelText="Hủy"
+        title="Xoá tài liệu"
+        description={`Bạn có chắc muốn xoá tài liệu "${
+          deleteTarget?.title || ""
+        }" không? Hành động này sẽ ẩn tài liệu khỏi workspace hiện tại.`}
+        confirmText="Xoá tài liệu"
+        cancelText="Huỷ"
         tone="danger"
         loading={isDeleting}
-        onCancel={() => setDeleteTarget(null)}
         onConfirm={() => void confirmDelete()}
+        onCancel={() => {
+          if (isDeleting) return;
+          setDeleteTarget(null);
+        }}
       />
     </>
   );

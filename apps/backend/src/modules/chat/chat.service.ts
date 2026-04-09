@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -6,11 +7,17 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { AskQuestionDto } from './dto/ask-question.dto';
 import { ListChatSessionsQueryDto } from './dto/list-chat-sessions-query.dto';
 import { RagAnswerResult } from './interfaces/rag-answer-result.interface';
+
+type OwnedSession = {
+  id: string;
+  documentId: string | null;
+};
 
 @Injectable()
 export class ChatService {
@@ -44,15 +51,41 @@ export class ChatService {
     dto: AskQuestionDto,
   ): Promise<RagAnswerResult> {
     const question = dto.question.trim();
+
+    if (!question) {
+      throw new BadRequestException('Question must not be empty');
+    }
+
     const topK = dto.topK ?? 5;
 
-    const sessionId = dto.sessionId
-      ? await this.ensureSessionOwnership(dto.sessionId, userId)
-      : await this.createSession(userId, question, dto.documentId);
+    const existingSession = dto.sessionId
+      ? await this.getOwnedSessionOrThrow(dto.sessionId, userId)
+      : null;
+
+    if (
+      existingSession?.documentId &&
+      dto.documentId &&
+      existingSession.documentId !== dto.documentId
+    ) {
+      throw new BadRequestException(
+        'This chat session does not belong to the provided document',
+      );
+    }
+
+    const effectiveDocumentId =
+      dto.documentId ?? existingSession?.documentId ?? undefined;
+
+    if (effectiveDocumentId) {
+      await this.assertDocumentReadyForChat(effectiveDocumentId, userId);
+    }
+
+    const sessionId =
+      existingSession?.id ??
+      (await this.createSession(userId, question, effectiveDocumentId));
 
     const searchResult = await this.searchService.semanticSearch(userId, {
       query: question,
-      documentId: dto.documentId,
+      documentId: effectiveDocumentId,
       topK,
     });
 
@@ -77,7 +110,7 @@ export class ChatService {
     return {
       sessionId,
       question,
-      documentId: dto.documentId,
+      documentId: effectiveDocumentId,
       documentIds,
       topK,
       usedChunks,
@@ -253,10 +286,10 @@ export class ChatService {
     };
   }
 
-  private async ensureSessionOwnership(
+  private async getOwnedSessionOrThrow(
     sessionId: string,
     userId: string,
-  ): Promise<string> {
+  ): Promise<OwnedSession> {
     const session = await this.prisma.chatSession.findFirst({
       where: {
         id: sessionId,
@@ -264,6 +297,7 @@ export class ChatService {
       },
       select: {
         id: true,
+        documentId: true,
       },
     });
 
@@ -271,6 +305,14 @@ export class ChatService {
       throw new NotFoundException('Chat session not found');
     }
 
+    return session;
+  }
+
+  private async ensureSessionOwnership(
+    sessionId: string,
+    userId: string,
+  ): Promise<string> {
+    const session = await this.getOwnedSessionOrThrow(sessionId, userId);
     return session.id;
   }
 
@@ -295,6 +337,33 @@ export class ChatService {
     if (session.userId !== userId) {
       throw new ForbiddenException(
         'You do not have permission to access this chat session',
+      );
+    }
+  }
+
+  private async assertDocumentReadyForChat(
+    documentId: string,
+    userId: string,
+  ): Promise<void> {
+    const document = await this.prisma.document.findFirst({
+      where: {
+        id: documentId,
+        userId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Document not found');
+    }
+
+    if (document.status !== 'READY') {
+      throw new BadRequestException(
+        'Document is not ready for chat. Please run extract, chunk, and embed first.',
       );
     }
   }
@@ -357,9 +426,11 @@ export class ChatService {
 
   private generateSessionTitle(question: string): string {
     const clean = question.replace(/\s+/g, ' ').trim();
+
     if (clean.length <= 80) {
       return clean;
     }
+
     return `${clean.slice(0, 77)}...`;
   }
 
@@ -452,178 +523,208 @@ Yêu cầu:
     const fallbackTitle = this.generateSessionTitle(question);
 
     try {
-        const response = await this.openai.chat.completions.create({
+      const response = await this.openai.chat.completions.create({
         model: this.chatModel,
         temperature: 0.2,
         messages: [
-            {
+          {
             role: 'system',
             content: [
-                'You generate short chat titles.',
-                'Return ONLY the title.',
-                'No quotes.',
-                'Max 8 words.',
-                'Vietnamese.',
+              'You generate short chat titles.',
+              'Return ONLY the title.',
+              'No quotes.',
+              'Max 8 words.',
+              'Vietnamese.',
             ].join(' '),
-            },
-            {
+          },
+          {
             role: 'user',
             content: `Tạo tiêu đề ngắn cho câu hỏi:\n${question}`,
-            },
+          },
         ],
-        });
+      });
 
-        const title = response.choices?.[0]?.message?.content?.trim();
+      const title = response.choices?.[0]?.message?.content?.trim();
 
-        if (!title) return fallbackTitle;
-
-        return title.length > 255 ? title.slice(0, 255) : title;
-    } catch (error) {
-        console.error('Generate title failed:', error);
+      if (!title) {
         return fallbackTitle;
+      }
+
+      return title.length > 255 ? title.slice(0, 255) : title;
+    } catch (error) {
+      console.error('Generate title failed:', error);
+      return fallbackTitle;
     }
+  }
+
+  async streamQuestion(
+    userId: string,
+    dto: AskQuestionDto,
+    res: import('express').Response,
+  ): Promise<void> {
+    const question = dto.question.trim();
+
+    if (!question) {
+      throw new BadRequestException('Question must not be empty');
     }
 
-      async streamQuestion(
-        userId: string,
-        dto: AskQuestionDto,
-        res: import('express').Response,
-    ): Promise<void> {
-        const question = dto.question.trim();
-        const topK = dto.topK ?? 5;
+    const topK = dto.topK ?? 5;
 
-        const sessionId = dto.sessionId
-        ? await this.ensureSessionOwnership(dto.sessionId, userId)
-        : await this.createSession(userId, question, dto.documentId);
+    const existingSession = dto.sessionId
+      ? await this.getOwnedSessionOrThrow(dto.sessionId, userId)
+      : null;
 
-        const searchResult = await this.searchService.semanticSearch(userId, {
-        query: question,
-        documentId: dto.documentId,
-        topK,
-        });
+    if (
+      existingSession?.documentId &&
+      dto.documentId &&
+      existingSession.documentId !== dto.documentId
+    ) {
+      throw new BadRequestException(
+        'This chat session does not belong to the provided document',
+      );
+    }
 
-        const usedChunks = searchResult.results;
-        const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
+    const effectiveDocumentId =
+      dto.documentId ?? existingSession?.documentId ?? undefined;
 
-        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-transform');
-        res.setHeader('Connection', 'keep-alive');
+    if (effectiveDocumentId) {
+      await this.assertDocumentReadyForChat(effectiveDocumentId, userId);
+    }
 
-        if (typeof res.flushHeaders === 'function') {
-        res.flushHeaders();
-        }
+    const sessionId =
+      existingSession?.id ??
+      (await this.createSession(userId, question, effectiveDocumentId));
 
-        const sendEvent = (event: string, data: unknown) => {
-        res.write(`event: ${event}\n`);
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
-        };
+    const searchResult = await this.searchService.semanticSearch(userId, {
+      query: question,
+      documentId: effectiveDocumentId,
+      topK,
+    });
 
-        sendEvent('meta', {
+    const usedChunks = searchResult.results;
+    const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
+
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
+
+    const sendEvent = (event: string, data: unknown) => {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    sendEvent('meta', {
+      sessionId,
+      question,
+      documentId: effectiveDocumentId ?? null,
+      documentIds,
+      topK,
+      usedChunks,
+    });
+
+    let answer =
+      'Không tìm thấy đủ thông tin liên quan trong tài liệu để trả lời câu hỏi này.';
+
+    try {
+      if (usedChunks.length === 0) {
+        sendEvent('delta', { content: answer });
+      } else {
+        const context = this.buildContext(usedChunks);
+        answer = await this.generateAnswerStream(question, context, sendEvent);
+      }
+
+      await this.persistConversation({
         sessionId,
-        question,
-        documentId: dto.documentId ?? null,
-        documentIds,
-        topK,
-        usedChunks,
-        });
+        userQuestion: question,
+        assistantAnswer: answer,
+      });
 
-        let answer =
-        'Không tìm thấy đủ thông tin liên quan trong tài liệu để trả lời câu hỏi này.';
+      sendEvent('done', {
+        sessionId,
+        answer,
+      });
 
-        try {
-        if (usedChunks.length === 0) {
-            sendEvent('delta', { content: answer });
-        } else {
-            const context = this.buildContext(usedChunks);
-            answer = await this.generateAnswerStream(question, context, sendEvent);
-        }
+      res.end();
+    } catch (error) {
+      console.error('Failed to stream RAG answer:', error);
 
-        await this.persistConversation({
-            sessionId,
-            userQuestion: question,
-            assistantAnswer: answer,
-        });
+      sendEvent('error', {
+        message: 'Failed to stream answer from retrieved context',
+      });
 
-        sendEvent('done', {
-            sessionId,
-            answer,
-        });
-
-        res.end();
-        } catch (error) {
-        console.error('Failed to stream RAG answer:', error);
-
-        sendEvent('error', {
-            message: 'Failed to stream answer from retrieved context',
-        });
-
-        res.end();
-        }
+      res.end();
     }
+  }
 
-      private async generateAnswerStream(
-        question: string,
-        context: string,
-        sendEvent: (event: string, data: unknown) => void,
-    ): Promise<string> {
-        try {
-        const stream = await this.openai.chat.completions.create({
-            model: this.chatModel,
-            temperature: 0.2,
-            stream: true,
-            messages: [
-            {
-                role: 'system',
-                content: [
-                'You are a retrieval-augmented assistant.',
-                'Answer only from the provided context.',
-                'Do not invent facts that are not supported by the context.',
-                'If the context is insufficient, clearly say that the document does not provide enough information.',
-                'Prefer concise, clear, and accurate answers in Vietnamese.',
-                ].join(' '),
-            },
-            {
-                role: 'user',
-                content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:
+  private async generateAnswerStream(
+    question: string,
+    context: string,
+    sendEvent: (event: string, data: unknown) => void,
+  ): Promise<string> {
+    try {
+      const stream = await this.openai.chat.completions.create({
+        model: this.chatModel,
+        temperature: 0.2,
+        stream: true,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'You are a retrieval-augmented assistant.',
+              'Answer only from the provided context.',
+              'Do not invent facts that are not supported by the context.',
+              'If the context is insufficient, clearly say that the document does not provide enough information.',
+              'Prefer concise, clear, and accurate answers in Vietnamese.',
+            ].join(' '),
+          },
+          {
+            role: 'user',
+            content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:
 
-    ${context}
+${context}
 
-    Câu hỏi:
-    ${question}
+Câu hỏi:
+${question}
 
-    Yêu cầu:
-    - Chỉ trả lời dựa trên ngữ cảnh ở trên.
-    - Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.
-    - Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
-            },
-            ],
-        });
+Yêu cầu:
+- Chỉ trả lời dựa trên ngữ cảnh ở trên.
+- Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.
+- Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
+          },
+        ],
+      });
 
-        let fullAnswer = '';
+      let fullAnswer = '';
 
-        for await (const chunk of stream) {
-            const delta = chunk.choices?.[0]?.delta?.content ?? '';
+      for await (const chunk of stream) {
+        const delta = chunk.choices?.[0]?.delta?.content ?? '';
 
-            if (!delta) {
-            continue;
-            }
-
-            fullAnswer += delta;
-            sendEvent('delta', { content: delta });
+        if (!delta) {
+          continue;
         }
 
-        const finalAnswer = fullAnswer.trim();
+        fullAnswer += delta;
+        sendEvent('delta', { content: delta });
+      }
 
-        if (!finalAnswer) {
-            throw new InternalServerErrorException('LLM returned empty streamed answer');
-        }
+      const finalAnswer = fullAnswer.trim();
 
-        return finalAnswer;
-        } catch (error) {
-        console.error('Failed to generate streamed RAG answer:', error);
+      if (!finalAnswer) {
         throw new InternalServerErrorException(
-            'Failed to generate streamed answer from retrieved context',
+          'LLM returned empty streamed answer',
         );
-        }
+      }
+
+      return finalAnswer;
+    } catch (error) {
+      console.error('Failed to generate streamed RAG answer:', error);
+      throw new InternalServerErrorException(
+        'Failed to generate streamed answer from retrieved context',
+      );
     }
+  }
 }

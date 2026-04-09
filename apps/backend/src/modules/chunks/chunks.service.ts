@@ -1,8 +1,11 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { DocumentStatus } from '@prisma/client';
+
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { chunkText } from './utils/text-chunker';
 
@@ -48,6 +51,14 @@ export class ChunksService {
       throw new BadRequestException('Document cleaned text is empty');
     }
 
+    await this.prisma.document.update({
+      where: { id: documentId },
+      data: {
+        status: DocumentStatus.PROCESSING,
+        errorMessage: null,
+      },
+    });
+
     const chunkSize = 1200;
     const chunkOverlap = 200;
 
@@ -62,29 +73,50 @@ export class ChunksService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.documentChunk.deleteMany({
-        where: {
-          documentId,
-        },
-      }),
-      this.prisma.documentChunk.createMany({
-        data: chunks.map((chunk) => ({
-          documentId,
-          documentContentId: contentRecord.id,
-          chunkIndex: chunk.chunkIndex,
-          content: chunk.content,
-          charCount: chunk.charCount,
-          startOffset: chunk.startOffset,
-          endOffset: chunk.endOffset,
-        })),
-      }),
-    ]);
+    try {
+      await this.prisma.$transaction([
+        this.prisma.documentChunk.deleteMany({
+          where: {
+            documentId,
+          },
+        }),
+        this.prisma.documentChunk.createMany({
+          data: chunks.map((chunk) => ({
+            documentId,
+            documentContentId: contentRecord.id,
+            chunkIndex: chunk.chunkIndex,
+            content: chunk.content,
+            charCount: chunk.charCount,
+            startOffset: chunk.startOffset,
+            endOffset: chunk.endOffset,
+          })),
+        }),
+        this.prisma.document.update({
+          where: {
+            id: documentId,
+          },
+          data: {
+            status: DocumentStatus.CHUNKED,
+            errorMessage: null,
+          },
+        }),
+      ]);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown chunking error';
+
+      await this.markDocumentFailed(documentId, message);
+
+      throw new InternalServerErrorException(
+        `Failed to chunk document: ${message}`,
+      );
+    }
 
     return {
       message: 'Document chunked successfully',
       data: {
         documentId,
+        status: DocumentStatus.CHUNKED,
         chunkCount: chunks.length,
         chunkSize,
         chunkOverlap,
@@ -122,5 +154,20 @@ export class ChunksService {
       message: 'Document chunks fetched successfully',
       data: chunks,
     };
+  }
+
+  private async markDocumentFailed(
+    documentId: string,
+    errorMessage?: string,
+  ): Promise<void> {
+    await this.prisma.document.update({
+      where: {
+        id: documentId,
+      },
+      data: {
+        status: DocumentStatus.FAILED,
+        errorMessage: errorMessage ?? 'Unknown chunking error',
+      },
+    });
   }
 }

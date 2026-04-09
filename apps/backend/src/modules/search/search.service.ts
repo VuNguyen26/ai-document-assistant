@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { SemanticSearchDto } from './dto/semantic-search.dto';
 import { SemanticSearchResult } from './interfaces/semantic-search-result.interface';
@@ -62,7 +63,7 @@ export class SearchService {
     const topK = dto.topK ?? 5;
 
     if (dto.documentId) {
-      await this.ensureDocumentOwnership(dto.documentId, userId);
+      await this.ensureReadyDocumentOwnership(dto.documentId, userId);
     }
 
     const queryEmbedding = await this.createQueryEmbedding(query);
@@ -108,7 +109,7 @@ export class SearchService {
     };
   }
 
-  private async ensureDocumentOwnership(
+  private async ensureReadyDocumentOwnership(
     documentId: string,
     userId: string,
   ): Promise<void> {
@@ -120,11 +121,18 @@ export class SearchService {
       },
       select: {
         id: true,
+        status: true,
       },
     });
 
     if (!document) {
       throw new NotFoundException('Document not found');
+    }
+
+    if (document.status !== 'READY') {
+      throw new BadRequestException(
+        'Document is not ready for semantic search. Please extract, chunk, and embed it first.',
+      );
     }
   }
 
@@ -162,11 +170,11 @@ export class SearchService {
     vectorLiteral: string,
     topK: number,
     documentId?: string,
-    ): Promise<RawSearchRow[]> {
+  ): Promise<RawSearchRow[]> {
     try {
-        if (documentId) {
+      if (documentId) {
         const rows = await this.prisma.$queryRaw<RawSearchRow[]>`
-            SELECT
+          SELECT
             dc.id AS "chunkId",
             d.id AS "documentId",
             d.original_filename AS "documentName",
@@ -176,47 +184,49 @@ export class SearchService {
             dc.start_offset AS "startOffset",
             dc.end_offset AS "endOffset",
             (dce.embedding <=> ${vectorLiteral}::vector) AS "distance"
-            FROM document_chunk_embeddings dce
-            INNER JOIN document_chunks dc
+          FROM document_chunk_embeddings dce
+          INNER JOIN document_chunks dc
             ON dc.id = dce.chunk_id
-            INNER JOIN documents d
+          INNER JOIN documents d
             ON d.id = dc.document_id
-            WHERE d.user_id = ${userId}
+          WHERE d.user_id = ${userId}
             AND d.deleted_at IS NULL
+            AND d.status = 'READY'
             AND d.id = ${documentId}
-            ORDER BY dce.embedding <=> ${vectorLiteral}::vector ASC
-            LIMIT ${topK};
+          ORDER BY dce.embedding <=> ${vectorLiteral}::vector ASC
+          LIMIT ${topK};
         `;
 
         return rows;
-        }
+      }
 
-        const rows = await this.prisma.$queryRaw<RawSearchRow[]>`
+      const rows = await this.prisma.$queryRaw<RawSearchRow[]>`
         SELECT
-            dc.id AS "chunkId",
-            d.id AS "documentId",
-            d.original_filename AS "documentName",
-            dc.chunk_index AS "chunkIndex",
-            dc.content AS "content",
-            dc.char_count AS "charCount",
-            dc.start_offset AS "startOffset",
-            dc.end_offset AS "endOffset",
-            (dce.embedding <=> ${vectorLiteral}::vector) AS "distance"
+          dc.id AS "chunkId",
+          d.id AS "documentId",
+          d.original_filename AS "documentName",
+          dc.chunk_index AS "chunkIndex",
+          dc.content AS "content",
+          dc.char_count AS "charCount",
+          dc.start_offset AS "startOffset",
+          dc.end_offset AS "endOffset",
+          (dce.embedding <=> ${vectorLiteral}::vector) AS "distance"
         FROM document_chunk_embeddings dce
         INNER JOIN document_chunks dc
-            ON dc.id = dce.chunk_id
+          ON dc.id = dce.chunk_id
         INNER JOIN documents d
-            ON d.id = dc.document_id
+          ON d.id = dc.document_id
         WHERE d.user_id = ${userId}
-            AND d.deleted_at IS NULL
+          AND d.deleted_at IS NULL
+          AND d.status = 'READY'
         ORDER BY dce.embedding <=> ${vectorLiteral}::vector ASC
         LIMIT ${topK};
-        `;
+      `;
 
-        return rows;
+      return rows;
     } catch (error) {
-        console.error('Failed to run semantic search:', error);
-        throw new InternalServerErrorException('Failed to run semantic search');
+      console.error('Failed to run semantic search:', error);
+      throw new InternalServerErrorException('Failed to run semantic search');
     }
-    }
+  }
 }

@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { DocumentStatus } from '@prisma/client';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import { franc } from 'franc';
@@ -46,13 +47,24 @@ export class ExtractionService {
       throw new NotFoundException('Document not found');
     }
 
+    await this.prisma.document.update({
+      where: { id: document.id },
+      data: {
+        status: DocumentStatus.PROCESSING,
+        errorMessage: null,
+      },
+    });
+
     if (!document.storageKey) {
-      await this.markDocumentFailed(document.id);
+      await this.markDocumentFailed(document.id, 'Document storage key is missing');
       throw new BadRequestException('Document storage key is missing');
     }
 
     if (!SUPPORTED_EXTRACTION_MIME_TYPES.has(document.mimeType)) {
-      await this.markDocumentFailed(document.id);
+      await this.markDocumentFailed(
+        document.id,
+        'This document type is not supported for extraction',
+      );
       throw new BadRequestException(
         'This document type is not supported for extraction',
       );
@@ -65,10 +77,14 @@ export class ExtractionService {
     );
 
     let fileBuffer: Buffer;
+
     try {
       fileBuffer = await fs.readFile(absoluteFilePath);
     } catch {
-      await this.markDocumentFailed(document.id);
+      await this.markDocumentFailed(
+        document.id,
+        'Document file not found on local storage',
+      );
       throw new NotFoundException('Document file not found on local storage');
     }
 
@@ -81,10 +97,10 @@ export class ExtractionService {
         document.originalFilename,
       );
     } catch (error) {
-      await this.markDocumentFailed(document.id);
-
       const message =
         error instanceof Error ? error.message : 'Unknown extraction error';
+
+      await this.markDocumentFailed(document.id, message);
 
       throw new InternalServerErrorException(
         `Failed to extract document: ${message}`,
@@ -97,6 +113,11 @@ export class ExtractionService {
 
     try {
       await this.prisma.$transaction([
+        this.prisma.documentChunk.deleteMany({
+          where: {
+            documentId: document.id,
+          },
+        }),
         this.prisma.documentContent.upsert({
           where: {
             documentId: document.id,
@@ -120,15 +141,17 @@ export class ExtractionService {
             id: document.id,
           },
           data: {
-            status: 'READY',
+            status: DocumentStatus.EXTRACTED,
+            sourceLanguage: detectedLanguage,
+            errorMessage: null,
           },
         }),
       ]);
     } catch (error) {
-      await this.markDocumentFailed(document.id);
-
       const message =
         error instanceof Error ? error.message : 'Unknown database error';
+
+      await this.markDocumentFailed(document.id, message);
 
       throw new InternalServerErrorException(
         `Failed to save extracted content: ${message}`,
@@ -139,7 +162,7 @@ export class ExtractionService {
       message: 'Document extracted successfully',
       data: {
         documentId: document.id,
-        status: 'READY',
+        status: DocumentStatus.EXTRACTED,
         textLength,
         detectedLanguage,
         overwritten: true,
@@ -200,13 +223,17 @@ export class ExtractionService {
     return result;
   }
 
-  private async markDocumentFailed(documentId: string): Promise<void> {
+  private async markDocumentFailed(
+    documentId: string,
+    errorMessage?: string,
+  ): Promise<void> {
     await this.prisma.document.update({
       where: {
         id: documentId,
       },
       data: {
-        status: 'FAILED',
+        status: DocumentStatus.FAILED,
+        errorMessage: errorMessage ?? 'Unknown pipeline error',
       },
     });
   }

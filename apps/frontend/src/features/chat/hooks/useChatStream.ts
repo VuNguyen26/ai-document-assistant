@@ -11,6 +11,44 @@ import type {
   UseChatStreamOptions,
 } from "../types/chat.types";
 
+function tryParseJson(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function extractDeltaValue(raw: string): string {
+  const parsed = tryParseJson(raw);
+
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "content" in parsed &&
+    typeof (parsed as { content?: unknown }).content === "string"
+  ) {
+    return (parsed as { content: string }).content;
+  }
+
+  return raw;
+}
+
+function extractErrorValue(raw: string): string {
+  const parsed = tryParseJson(raw);
+
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "message" in parsed &&
+    typeof (parsed as { message?: unknown }).message === "string"
+  ) {
+    return (parsed as { message: string }).message;
+  }
+
+  return raw || "Streaming failed";
+}
+
 function parseSseChunk(buffer: string): {
   events: StreamEvent[];
   rest: string;
@@ -37,12 +75,13 @@ function parseSseChunk(buffer: string): {
     const joinedData = dataLines.join("\n");
 
     if (eventName === "delta") {
-      events.push({ type: "delta", data: joinedData });
+      events.push({ type: "delta", data: extractDeltaValue(joinedData) });
       continue;
     }
 
     if (eventName === "done") {
-      events.push({ type: "done", data: joinedData });
+      const parsed = joinedData ? tryParseJson(joinedData) ?? joinedData : undefined;
+      events.push({ type: "done", data: parsed });
       continue;
     }
 
@@ -57,7 +96,10 @@ function parseSseChunk(buffer: string): {
     }
 
     if (eventName === "error") {
-      events.push({ type: "error", data: joinedData || "Streaming failed" });
+      events.push({
+        type: "error",
+        data: extractErrorValue(joinedData),
+      });
     }
   }
 
@@ -154,7 +196,7 @@ export function useChatStream(options?: UseChatStreamOptions) {
         abortControllerRef.current = null;
       }
     },
-    [isStreaming, options]
+    [isStreaming, options],
   );
 
   return {

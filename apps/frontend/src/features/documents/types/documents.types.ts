@@ -1,13 +1,11 @@
 export type DocumentStatus =
   | "UPLOADED"
+  | "PROCESSING"
+  | "EXTRACTED"
+  | "CHUNKED"
   | "READY"
   | "FAILED"
-  | "DELETED"
-  | "PROCESSING"
-  | "VALIDATING"
-  | "EXTRACTING"
-  | "CHUNKING"
-  | "EMBEDDING";
+  | "DELETED";
 
 export type DocumentItem = {
   id: string;
@@ -33,6 +31,12 @@ export type DocumentsListResponse = {
     limit: number;
     total: number;
     totalPages: number;
+  };
+  summary: {
+    total: number;
+    ready: number;
+    failed: number;
+    incomplete: number;
   };
 };
 
@@ -63,7 +67,7 @@ export type DocumentChunk = {
 
 export type DocumentDetailResponse = DocumentItem & {
   content?: DocumentContent | null;
-  chunks?: DocumentChunk[];
+  chunks?: DocumentChunk[] | null;
 };
 
 export type DocumentActionResult = {

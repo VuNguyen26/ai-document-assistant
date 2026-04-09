@@ -11,6 +11,7 @@ import { ChunksModule } from './modules/chunks/chunks.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 import { SearchModule } from './modules/search/search.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { SummariesModule } from './modules/summaries/summaries.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ChatModule } from './modules/chat/chat.module';
     EmbeddingsModule,
     SearchModule,
     ChatModule,
+    SummariesModule,
   ],
 })
 export class AppModule {}

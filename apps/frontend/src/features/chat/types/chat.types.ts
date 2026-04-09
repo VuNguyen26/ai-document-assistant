@@ -1,5 +1,18 @@
 export type ChatRole = "USER" | "ASSISTANT";
 
+export interface ChatCitation {
+  chunkId: string;
+  documentId: string;
+  documentName: string;
+  chunkIndex: number;
+  content: string;
+  charCount: number;
+  startOffset: number | null;
+  endOffset: number | null;
+  distance: number;
+  score: number;
+}
+
 export interface ChatSession {
   id: string;
   title: string;
@@ -14,6 +27,7 @@ export interface ChatMessage {
   role: ChatRole;
   content: string;
   createdAt: string;
+  citations?: ChatCitation[];
 }
 
 export interface AskChatPayload {
@@ -28,7 +42,12 @@ export interface RenameSessionPayload {
 
 export interface AskChatResponse {
   sessionId: string;
+  question: string;
   answer: string;
+  documentId?: string;
+  documentIds?: string[];
+  topK?: number;
+  usedChunks?: ChatCitation[];
 }
 
 export interface ApiEnvelope<T> {
@@ -39,6 +58,11 @@ export interface ApiEnvelope<T> {
 
 export interface StreamMetaEvent {
   sessionId?: string;
+  question?: string;
+  documentId?: string | null;
+  documentIds?: string[];
+  topK?: number;
+  usedChunks?: ChatCitation[];
   [key: string]: unknown;
 }
 

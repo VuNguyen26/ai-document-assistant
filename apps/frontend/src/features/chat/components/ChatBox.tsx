@@ -1,11 +1,11 @@
 "use client";
 
-import { logout } from "@/features/auth/api/auth.api";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { logout } from "@/features/auth/api/auth.api";
 import { getAccessToken } from "@/lib/auth/token-storage";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   deleteChatSession,
   getChatMessages,
@@ -14,6 +14,7 @@ import {
 } from "../api/chat.api";
 import { useChatStream } from "../hooks/useChatStream";
 import type {
+  ChatCitation,
   ChatMessage,
   ChatSession,
   StreamMetaEvent,
@@ -45,7 +46,29 @@ function createTempAssistantMessage(): ChatMessage {
     role: "ASSISTANT",
     content: "",
     createdAt: new Date().toISOString(),
+    citations: [],
   };
+}
+
+function attachCitationsToLatestAssistant(
+  source: ChatMessage[],
+  citations: ChatCitation[],
+): ChatMessage[] {
+  if (!citations.length) return source;
+
+  const next = [...source];
+
+  for (let i = next.length - 1; i >= 0; i -= 1) {
+    if (next[i].role === "ASSISTANT") {
+      next[i] = {
+        ...next[i],
+        citations,
+      };
+      break;
+    }
+  }
+
+  return next;
 }
 
 export default function ChatBox({ documentId }: ChatBoxProps) {
@@ -69,6 +92,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const latestMetaRef = useRef<StreamMetaEvent | null>(null);
 
   const activeSession = useMemo(
     () => sessions.find((session) => session.id === activeSessionId) || null,
@@ -158,8 +182,16 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
   const { isStreaming, startStream } = useChatStream({
     onMeta: (meta: StreamMetaEvent) => {
+      latestMetaRef.current = meta;
+
       if (meta?.sessionId) {
         setActiveSessionId((prev) => prev ?? String(meta.sessionId));
+      }
+
+      const citations = meta.usedChunks ?? [];
+
+      if (citations.length) {
+        setMessages((prev) => attachCitationsToLatestAssistant(prev, citations));
       }
     },
     onDelta: (delta: string) => {
@@ -183,7 +215,8 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       try {
         const updatedSessions = await refreshSessions();
 
-        let targetSessionId = activeSessionId;
+        let targetSessionId =
+          latestMetaRef.current?.sessionId?.toString() || activeSessionId;
 
         if (!targetSessionId) {
           const matchingSession =
@@ -204,9 +237,13 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
         if (targetSessionId) {
           const latestMessages = await getChatMessages(targetSessionId);
-          setMessages(latestMessages);
+          const citations = latestMetaRef.current?.usedChunks ?? [];
+
+          setMessages(attachCitationsToLatestAssistant(latestMessages, citations));
           toast.success("Đã cập nhật hội thoại.");
         }
+
+        latestMetaRef.current = null;
       } catch (err) {
         setError(
           (err as Error).message || "Không thể đồng bộ dữ liệu sau khi stream",
@@ -223,6 +260,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
       setError(message);
       toast.error(message);
+      latestMetaRef.current = null;
     },
   });
 
@@ -231,6 +269,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     setMessages([]);
     setError(null);
     setInput("");
+    latestMetaRef.current = null;
     toast.success("Sẵn sàng cho cuộc trò chuyện mới.");
   }, []);
 
@@ -239,6 +278,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     if (!question || isStreaming) return;
 
     setError(null);
+    latestMetaRef.current = null;
 
     const optimisticUser = createTempUserMessage(question);
     const optimisticAssistant = createTempAssistantMessage();
@@ -282,11 +322,14 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     [renameValue],
   );
 
-  const handleDelete = useCallback((sessionId: string) => {
-    const target =
-      sessions.find((session) => session.id === sessionId) || null;
-    setDeleteTarget(target);
-  }, [sessions]);
+  const handleDelete = useCallback(
+    (sessionId: string) => {
+      const target =
+        sessions.find((session) => session.id === sessionId) || null;
+      setDeleteTarget(target);
+    },
+    [sessions],
+  );
 
   const confirmDeleteSession = useCallback(async () => {
     if (!deleteTarget) return;

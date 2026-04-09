@@ -10,6 +10,10 @@ function getStatusStyle(status: string) {
       return "bg-rose-50 text-rose-700 border-rose-200";
     case "UPLOADED":
       return "bg-amber-50 text-amber-700 border-amber-200";
+    case "EXTRACTED":
+      return "bg-sky-50 text-sky-700 border-sky-200";
+    case "CHUNKED":
+      return "bg-indigo-50 text-indigo-700 border-indigo-200";
     case "PROCESSING":
     case "VALIDATING":
     case "EXTRACTING":
@@ -21,16 +25,37 @@ function getStatusStyle(status: string) {
   }
 }
 
-export default function DocumentStatusBadge({
-  status,
-}: DocumentStatusBadgeProps) {
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Đã upload";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "EXTRACTED":
+      return "Đã extract";
+    case "CHUNKED":
+      return "Đã chunk";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
+    default:
+      return status;
+  }
+}
+
+export function DocumentStatusBadge({ status }: DocumentStatusBadgeProps) {
   return (
     <span
       className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${getStatusStyle(
         status,
       )}`}
     >
-      {status}
+      {getStatusLabel(status)}
     </span>
   );
 }
+
+export default DocumentStatusBadge;
