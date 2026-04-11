@@ -1,7 +1,12 @@
-export type ChatRole = "USER" | "ASSISTANT";
+export type ApiEnvelope<T> = {
+  success?: boolean;
+  message?: string;
+  data: T;
+};
 
-export interface ChatCitation {
-  chunkId: string;
+export type ChatCitation = {
+  id?: string;
+  chunkId: string | null;
   documentId: string;
   documentName: string;
   chunkIndex: number;
@@ -11,70 +16,71 @@ export interface ChatCitation {
   endOffset: number | null;
   distance: number;
   score: number;
-}
+};
 
-export interface ChatSession {
+export type ChatMessage = {
   id: string;
-  title: string;
-  documentId?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  sessionId: string;
-  role: ChatRole;
+  role: string;
   content: string;
   createdAt: string;
   citations?: ChatCitation[];
-}
+};
 
-export interface AskChatPayload {
+export type ChatSession = {
+  id: string;
+  title: string | null;
+  documentId: string | null;
+  workspaceId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChatSessionsResponse = {
+  data: ChatSession[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export type AskChatPayload = {
   question: string;
-  sessionId?: string;
   documentId?: string;
-}
+  workspaceId?: string;
+  sessionId?: string;
+  topK?: number;
+};
 
-export interface RenameSessionPayload {
-  title: string;
-}
-
-export interface AskChatResponse {
+export type AskChatResponse = {
   sessionId: string;
   question: string;
   answer: string;
   documentId?: string;
-  documentIds?: string[];
-  topK?: number;
-  usedChunks?: ChatCitation[];
-}
+  workspaceId?: string;
+  documentIds: string[];
+  topK: number;
+  usedChunks: ChatCitation[];
+};
 
-export interface ApiEnvelope<T> {
-  success?: boolean;
-  message?: string;
-  data: T;
-}
+export type RenameSessionPayload = {
+  title: string;
+};
 
-export interface StreamMetaEvent {
-  sessionId?: string;
-  question?: string;
-  documentId?: string | null;
-  documentIds?: string[];
-  topK?: number;
-  usedChunks?: ChatCitation[];
-  [key: string]: unknown;
-}
+export type StreamMetaEvent = {
+  sessionId: string;
+  question: string;
+  documentId: string | null;
+  workspaceId: string | null;
+  documentIds: string[];
+  topK: number;
+  usedChunks: ChatCitation[];
+};
 
-export type StreamEvent =
-  | { type: "meta"; data: StreamMetaEvent }
-  | { type: "delta"; data: string }
-  | { type: "done"; data?: unknown }
-  | { type: "error"; data: string };
-
-export interface UseChatStreamOptions {
+export type StreamChatHandlers = {
   onMeta?: (meta: StreamMetaEvent) => void;
-  onDelta?: (delta: string) => void;
-  onDone?: () => void;
-  onError?: (error: string) => void;
-}
+  onDelta?: (payload: { content: string }) => void;
+  onDone?: (payload: { sessionId: string; answer: string }) => void;
+  onError?: (payload: { message: string }) => void;
+};

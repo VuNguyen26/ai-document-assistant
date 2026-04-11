@@ -16,6 +16,7 @@ export interface RagAnswerResult {
   question: string;
   answer: string;
   documentId?: string;
+  workspaceId?: string;
   documentIds: string[];
   topK: number;
   usedChunks: RagUsedChunk[];

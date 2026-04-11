@@ -20,6 +20,10 @@ export class SemanticSearchDto {
   documentId?: string;
 
   @IsOptional()
+  @IsUUID()
+  workspaceId?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)

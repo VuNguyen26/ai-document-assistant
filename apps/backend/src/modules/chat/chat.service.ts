@@ -6,17 +6,37 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { SearchService } from '../search/search.service';
 import { AskQuestionDto } from './dto/ask-question.dto';
 import { ListChatSessionsQueryDto } from './dto/list-chat-sessions-query.dto';
-import { RagAnswerResult } from './interfaces/rag-answer-result.interface';
+import {
+  RagAnswerResult,
+  RagUsedChunk,
+} from './interfaces/rag-answer-result.interface';
 
 type OwnedSession = {
   id: string;
   documentId: string | null;
+  workspaceId: string | null;
+};
+
+type PersistedChatCitation = {
+  id: string;
+  messageId: string;
+  chunkId: string | null;
+  documentId: string;
+  documentName: string;
+  chunkIndex: number;
+  content: string;
+  charCount: number;
+  startOffset: number | null;
+  endOffset: number | null;
+  distance: number;
+  score: number;
 };
 
 @Injectable()
@@ -56,36 +76,38 @@ export class ChatService {
       throw new BadRequestException('Question must not be empty');
     }
 
+    if (dto.documentId && dto.workspaceId) {
+      throw new BadRequestException(
+        'documentId và workspaceId không được truyền cùng lúc',
+      );
+    }
+
     const topK = dto.topK ?? 5;
 
     const existingSession = dto.sessionId
       ? await this.getOwnedSessionOrThrow(dto.sessionId, userId)
       : null;
 
-    if (
-      existingSession?.documentId &&
-      dto.documentId &&
-      existingSession.documentId !== dto.documentId
-    ) {
-      throw new BadRequestException(
-        'This chat session does not belong to the provided document',
-      );
-    }
+    this.validateSessionScope(existingSession, dto);
 
     const effectiveDocumentId =
       dto.documentId ?? existingSession?.documentId ?? undefined;
+    const effectiveWorkspaceId =
+      dto.workspaceId ?? existingSession?.workspaceId ?? undefined;
 
-    if (effectiveDocumentId) {
-      await this.assertDocumentReadyForChat(effectiveDocumentId, userId);
-    }
+    await this.assertChatScope(userId, effectiveDocumentId, effectiveWorkspaceId);
 
     const sessionId =
       existingSession?.id ??
-      (await this.createSession(userId, question, effectiveDocumentId));
+      (await this.createSession(userId, question, {
+        documentId: effectiveDocumentId,
+        workspaceId: effectiveWorkspaceId,
+      }));
 
     const searchResult = await this.searchService.semanticSearch(userId, {
       query: question,
       documentId: effectiveDocumentId,
+      workspaceId: effectiveWorkspaceId,
       topK,
     });
 
@@ -105,12 +127,14 @@ export class ChatService {
       sessionId,
       userQuestion: question,
       assistantAnswer: answer,
+      citations: usedChunks,
     });
 
     return {
       sessionId,
       question,
       documentId: effectiveDocumentId,
+      workspaceId: effectiveWorkspaceId,
       documentIds,
       topK,
       usedChunks,
@@ -128,6 +152,7 @@ export class ChatService {
       id: string;
       title: string | null;
       documentId: string | null;
+      workspaceId: string | null;
       createdAt: Date;
       updatedAt: Date;
     }>;
@@ -142,16 +167,22 @@ export class ChatService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
+    if (query.documentId && query.workspaceId) {
+      throw new BadRequestException(
+        'documentId và workspaceId không được truyền cùng lúc',
+      );
+    }
+
+    const where = {
+      userId,
+      ...(query.documentId ? { documentId: query.documentId } : {}),
+      ...(query.workspaceId ? { workspaceId: query.workspaceId } : {}),
+    };
+
     const [total, sessions] = await Promise.all([
-      this.prisma.chatSession.count({
-        where: {
-          userId,
-        },
-      }),
+      this.prisma.chatSession.count({ where }),
       this.prisma.chatSession.findMany({
-        where: {
-          userId,
-        },
+        where,
         orderBy: {
           updatedAt: 'desc',
         },
@@ -161,6 +192,7 @@ export class ChatService {
           id: true,
           title: true,
           documentId: true,
+          workspaceId: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -191,6 +223,19 @@ export class ChatService {
       role: string;
       content: string;
       createdAt: Date;
+      citations: Array<{
+        id: string;
+        chunkId: string | null;
+        documentId: string;
+        documentName: string;
+        chunkIndex: number;
+        content: string;
+        charCount: number;
+        startOffset: number | null;
+        endOffset: number | null;
+        distance: number;
+        score: number;
+      }>;
     }>;
   }> {
     await this.assertSessionOwnership(sessionId, userId);
@@ -210,10 +255,58 @@ export class ChatService {
       },
     });
 
+    const messageIds = messages.map((message) => message.id);
+
+    const citations = messageIds.length
+      ? await this.prisma.$queryRawUnsafe<PersistedChatCitation[]>(
+          `
+            SELECT
+              cc.id AS "id",
+              cc.message_id AS "messageId",
+              cc.chunk_id AS "chunkId",
+              cc.document_id AS "documentId",
+              cc.document_name AS "documentName",
+              cc.chunk_index AS "chunkIndex",
+              cc.content AS "content",
+              cc.char_count AS "charCount",
+              cc.start_offset AS "startOffset",
+              cc.end_offset AS "endOffset",
+              cc.distance AS "distance",
+              cc.score AS "score"
+            FROM chat_citations cc
+            WHERE cc.message_id IN (${this.joinUuidList(messageIds)})
+            ORDER BY cc.created_at ASC
+          `,
+        )
+      : [];
+
+    const citationMap = new Map<string, PersistedChatCitation[]>();
+
+    for (const citation of citations) {
+      const current = citationMap.get(citation.messageId) ?? [];
+      current.push(citation);
+      citationMap.set(citation.messageId, current);
+    }
+
     return {
       success: true,
       message: 'Chat messages fetched successfully',
-      data: messages,
+      data: messages.map((message) => ({
+        ...message,
+        citations: (citationMap.get(message.id) ?? []).map((citation) => ({
+          id: citation.id,
+          chunkId: citation.chunkId,
+          documentId: citation.documentId,
+          documentName: citation.documentName,
+          chunkIndex: citation.chunkIndex,
+          content: citation.content,
+          charCount: citation.charCount,
+          startOffset: citation.startOffset,
+          endOffset: citation.endOffset,
+          distance: Number(citation.distance),
+          score: Number(citation.score),
+        })),
+      })),
     };
   }
 
@@ -298,6 +391,7 @@ export class ChatService {
       select: {
         id: true,
         documentId: true,
+        workspaceId: true,
       },
     });
 
@@ -308,12 +402,43 @@ export class ChatService {
     return session;
   }
 
-  private async ensureSessionOwnership(
-    sessionId: string,
-    userId: string,
-  ): Promise<string> {
-    const session = await this.getOwnedSessionOrThrow(sessionId, userId);
-    return session.id;
+  private validateSessionScope(
+    existingSession: OwnedSession | null,
+    dto: AskQuestionDto,
+  ): void {
+    if (!existingSession) return;
+
+    if (
+      existingSession.documentId &&
+      dto.documentId &&
+      existingSession.documentId !== dto.documentId
+    ) {
+      throw new BadRequestException(
+        'This chat session does not belong to the provided document',
+      );
+    }
+
+    if (
+      existingSession.workspaceId &&
+      dto.workspaceId &&
+      existingSession.workspaceId !== dto.workspaceId
+    ) {
+      throw new BadRequestException(
+        'This chat session does not belong to the provided workspace',
+      );
+    }
+
+    if (existingSession.documentId && dto.workspaceId) {
+      throw new BadRequestException(
+        'This chat session belongs to a document, not a workspace',
+      );
+    }
+
+    if (existingSession.workspaceId && dto.documentId) {
+      throw new BadRequestException(
+        'This chat session belongs to a workspace, not a document',
+      );
+    }
   }
 
   private async assertSessionOwnership(
@@ -338,6 +463,26 @@ export class ChatService {
       throw new ForbiddenException(
         'You do not have permission to access this chat session',
       );
+    }
+  }
+
+  private async assertChatScope(
+    userId: string,
+    documentId?: string,
+    workspaceId?: string,
+  ): Promise<void> {
+    if (documentId && workspaceId) {
+      throw new BadRequestException(
+        'documentId và workspaceId không được truyền cùng lúc',
+      );
+    }
+
+    if (documentId) {
+      await this.assertDocumentReadyForChat(documentId, userId);
+    }
+
+    if (workspaceId) {
+      await this.assertWorkspaceReadyForChat(workspaceId, userId);
     }
   }
 
@@ -368,18 +513,62 @@ export class ChatService {
     }
   }
 
+  private async assertWorkspaceReadyForChat(
+    workspaceId: string,
+    userId: string,
+  ): Promise<void> {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: {
+        id: workspaceId,
+        userId,
+      },
+      select: {
+        id: true,
+        documents: {
+          select: {
+            document: {
+              select: {
+                id: true,
+                status: true,
+                deletedAt: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
+
+    const readyCount = workspace.documents.filter(
+      (item) =>
+        item.document.deletedAt === null && item.document.status === 'READY',
+    ).length;
+
+    if (readyCount === 0) {
+      throw new BadRequestException(
+        'Workspace chưa có document READY để chat. Hãy process ít nhất một tài liệu trước.',
+      );
+    }
+  }
+
   private async createSession(
     userId: string,
     question: string,
-    documentId?: string,
+    scope?: {
+      documentId?: string;
+      workspaceId?: string;
+    },
   ): Promise<string> {
     const title = await this.generateSmartSessionTitle(question);
 
     const session = await this.prisma.chatSession.create({
       data: {
         userId,
-        documentId: documentId ?? null,
-        workspaceId: null,
+        documentId: scope?.documentId ?? null,
+        workspaceId: scope?.workspaceId ?? null,
         title,
         language: 'vi',
       },
@@ -395,33 +584,75 @@ export class ChatService {
     sessionId: string;
     userQuestion: string;
     assistantAnswer: string;
+    citations: RagUsedChunk[];
   }): Promise<void> {
-    const { sessionId, userQuestion, assistantAnswer } = params;
+    const { sessionId, userQuestion, assistantAnswer, citations } = params;
 
-    await this.prisma.$transaction([
-      this.prisma.chatMessage.create({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.chatMessage.create({
         data: {
           sessionId,
           role: 'USER',
           content: userQuestion,
           translatedContent: null,
         },
-      }),
-      this.prisma.chatMessage.create({
+      });
+
+      const assistantMessage = await tx.chatMessage.create({
         data: {
           sessionId,
           role: 'ASSISTANT',
           content: assistantAnswer,
           translatedContent: null,
         },
-      }),
-      this.prisma.chatSession.update({
+        select: {
+          id: true,
+        },
+      });
+
+      if (citations.length > 0) {
+        for (const citation of citations) {
+          await tx.$executeRaw`
+            INSERT INTO chat_citations (
+              id,
+              message_id,
+              chunk_id,
+              document_id,
+              document_name,
+              chunk_index,
+              content,
+              char_count,
+              start_offset,
+              end_offset,
+              distance,
+              score,
+              created_at
+            ) VALUES (
+              ${randomUUID()},
+              ${assistantMessage.id},
+              ${citation.chunkId},
+              ${citation.documentId},
+              ${citation.documentName},
+              ${citation.chunkIndex},
+              ${citation.content},
+              ${citation.charCount},
+              ${citation.startOffset},
+              ${citation.endOffset},
+              ${citation.distance},
+              ${citation.score},
+              NOW()
+            )
+          `;
+        }
+      }
+
+      await tx.chatSession.update({
         where: { id: sessionId },
         data: {
           updatedAt: new Date(),
         },
-      }),
-    ]);
+      });
+    });
   }
 
   private generateSessionTitle(question: string): string {
@@ -489,17 +720,7 @@ export class ChatService {
           },
           {
             role: 'user',
-            content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:
-
-${context}
-
-Câu hỏi:
-${question}
-
-Yêu cầu:
-- Chỉ trả lời dựa trên ngữ cảnh ở trên.
-- Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.
-- Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
+            content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:\n\n${context}\n\nCâu hỏi:\n${question}\n\nYêu cầu:\n- Chỉ trả lời dựa trên ngữ cảnh ở trên.\n- Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.\n- Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
           },
         ],
       });
@@ -568,36 +789,38 @@ Yêu cầu:
       throw new BadRequestException('Question must not be empty');
     }
 
+    if (dto.documentId && dto.workspaceId) {
+      throw new BadRequestException(
+        'documentId và workspaceId không được truyền cùng lúc',
+      );
+    }
+
     const topK = dto.topK ?? 5;
 
     const existingSession = dto.sessionId
       ? await this.getOwnedSessionOrThrow(dto.sessionId, userId)
       : null;
 
-    if (
-      existingSession?.documentId &&
-      dto.documentId &&
-      existingSession.documentId !== dto.documentId
-    ) {
-      throw new BadRequestException(
-        'This chat session does not belong to the provided document',
-      );
-    }
+    this.validateSessionScope(existingSession, dto);
 
     const effectiveDocumentId =
       dto.documentId ?? existingSession?.documentId ?? undefined;
+    const effectiveWorkspaceId =
+      dto.workspaceId ?? existingSession?.workspaceId ?? undefined;
 
-    if (effectiveDocumentId) {
-      await this.assertDocumentReadyForChat(effectiveDocumentId, userId);
-    }
+    await this.assertChatScope(userId, effectiveDocumentId, effectiveWorkspaceId);
 
     const sessionId =
       existingSession?.id ??
-      (await this.createSession(userId, question, effectiveDocumentId));
+      (await this.createSession(userId, question, {
+        documentId: effectiveDocumentId,
+        workspaceId: effectiveWorkspaceId,
+      }));
 
     const searchResult = await this.searchService.semanticSearch(userId, {
       query: question,
       documentId: effectiveDocumentId,
+      workspaceId: effectiveWorkspaceId,
       topK,
     });
 
@@ -621,6 +844,7 @@ Yêu cầu:
       sessionId,
       question,
       documentId: effectiveDocumentId ?? null,
+      workspaceId: effectiveWorkspaceId ?? null,
       documentIds,
       topK,
       usedChunks,
@@ -641,6 +865,7 @@ Yêu cầu:
         sessionId,
         userQuestion: question,
         assistantAnswer: answer,
+        citations: usedChunks,
       });
 
       sendEvent('done', {
@@ -683,17 +908,7 @@ Yêu cầu:
           },
           {
             role: 'user',
-            content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:
-
-${context}
-
-Câu hỏi:
-${question}
-
-Yêu cầu:
-- Chỉ trả lời dựa trên ngữ cảnh ở trên.
-- Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.
-- Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
+            content: `Dưới đây là ngữ cảnh được truy xuất từ tài liệu:\n\n${context}\n\nCâu hỏi:\n${question}\n\nYêu cầu:\n- Chỉ trả lời dựa trên ngữ cảnh ở trên.\n- Nếu ngữ cảnh không đủ, hãy nói rõ là không tìm thấy đủ thông tin trong tài liệu.\n- Trả lời bằng tiếng Việt, rõ ràng, dễ hiểu.`,
           },
         ],
       });
@@ -726,5 +941,9 @@ Yêu cầu:
         'Failed to generate streamed answer from retrieved context',
       );
     }
+  }
+
+  private joinUuidList(values: string[]): string {
+    return values.map((value) => `'${value}'`).join(', ');
   }
 }

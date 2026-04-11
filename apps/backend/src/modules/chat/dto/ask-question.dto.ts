@@ -21,6 +21,10 @@ export class AskQuestionDto {
 
   @IsOptional()
   @IsUUID()
+  workspaceId?: string;
+
+  @IsOptional()
+  @IsUUID()
   sessionId?: string;
 
   @IsOptional()

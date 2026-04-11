@@ -51,6 +51,7 @@ export class SearchService {
   ): Promise<{
     query: string;
     documentId?: string;
+    workspaceId?: string;
     topK: number;
     results: SemanticSearchResult[];
   }> {
@@ -60,10 +61,20 @@ export class SearchService {
       throw new BadRequestException('Query must not be empty');
     }
 
+    if (dto.documentId && dto.workspaceId) {
+      throw new BadRequestException(
+        'documentId và workspaceId không được truyền cùng lúc',
+      );
+    }
+
     const topK = dto.topK ?? 5;
 
     if (dto.documentId) {
       await this.ensureReadyDocumentOwnership(dto.documentId, userId);
+    }
+
+    if (dto.workspaceId) {
+      await this.ensureWorkspaceOwnership(dto.workspaceId, userId);
     }
 
     const queryEmbedding = await this.createQueryEmbedding(query);
@@ -81,6 +92,7 @@ export class SearchService {
       vectorLiteral,
       topK,
       dto.documentId,
+      dto.workspaceId,
     );
 
     const results: SemanticSearchResult[] = rows.map((row) => {
@@ -104,6 +116,7 @@ export class SearchService {
     return {
       query,
       documentId: dto.documentId,
+      workspaceId: dto.workspaceId,
       topK,
       results,
     };
@@ -133,6 +146,25 @@ export class SearchService {
       throw new BadRequestException(
         'Document is not ready for semantic search. Please extract, chunk, and embed it first.',
       );
+    }
+  }
+
+  private async ensureWorkspaceOwnership(
+    workspaceId: string,
+    userId: string,
+  ): Promise<void> {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: {
+        id: workspaceId,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
     }
   }
 
@@ -170,6 +202,7 @@ export class SearchService {
     vectorLiteral: string,
     topK: number,
     documentId?: string,
+    workspaceId?: string,
   ): Promise<RawSearchRow[]> {
     try {
       if (documentId) {
@@ -193,6 +226,36 @@ export class SearchService {
             AND d.deleted_at IS NULL
             AND d.status = 'READY'
             AND d.id = ${documentId}
+          ORDER BY dce.embedding <=> ${vectorLiteral}::vector ASC
+          LIMIT ${topK};
+        `;
+
+        return rows;
+      }
+
+      if (workspaceId) {
+        const rows = await this.prisma.$queryRaw<RawSearchRow[]>`
+          SELECT
+            dc.id AS "chunkId",
+            d.id AS "documentId",
+            d.original_filename AS "documentName",
+            dc.chunk_index AS "chunkIndex",
+            dc.content AS "content",
+            dc.char_count AS "charCount",
+            dc.start_offset AS "startOffset",
+            dc.end_offset AS "endOffset",
+            (dce.embedding <=> ${vectorLiteral}::vector) AS "distance"
+          FROM workspace_documents wd
+          INNER JOIN documents d
+            ON d.id = wd.document_id
+          INNER JOIN document_chunks dc
+            ON dc.document_id = d.id
+          INNER JOIN document_chunk_embeddings dce
+            ON dce.chunk_id = dc.id
+          WHERE wd.workspace_id = ${workspaceId}
+            AND d.user_id = ${userId}
+            AND d.deleted_at IS NULL
+            AND d.status = 'READY'
           ORDER BY dce.embedding <=> ${vectorLiteral}::vector ASC
           LIMIT ${topK};
         `;

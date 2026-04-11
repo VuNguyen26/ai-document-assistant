@@ -13,12 +13,7 @@ import {
   renameChatSession,
 } from "../api/chat.api";
 import { useChatStream } from "../hooks/useChatStream";
-import type {
-  ChatCitation,
-  ChatMessage,
-  ChatSession,
-  StreamMetaEvent,
-} from "../types/chat.types";
+import type { ChatCitation, ChatMessage, ChatSession } from "../types/chat.types";
 import ChatComposer from "./ChatComposer";
 import ChatHeader from "./ChatHeader";
 import ChatMessageList from "./ChatMessageList";
@@ -29,10 +24,19 @@ type ChatBoxProps = {
   documentId: string;
 };
 
+type StreamMetaPayload = {
+  sessionId: string;
+  question: string;
+  documentId: string | null;
+  workspaceId: string | null;
+  documentIds: string[];
+  topK: number;
+  usedChunks: ChatCitation[];
+};
+
 function createTempUserMessage(content: string): ChatMessage {
   return {
     id: `temp-user-${Date.now()}`,
-    sessionId: "",
     role: "USER",
     content,
     createdAt: new Date().toISOString(),
@@ -42,7 +46,6 @@ function createTempUserMessage(content: string): ChatMessage {
 function createTempAssistantMessage(): ChatMessage {
   return {
     id: `temp-assistant-${Date.now()}`,
-    sessionId: "",
     role: "ASSISTANT",
     content: "",
     createdAt: new Date().toISOString(),
@@ -58,10 +61,10 @@ function attachCitationsToLatestAssistant(
 
   const next = [...source];
 
-  for (let i = next.length - 1; i >= 0; i -= 1) {
-    if (next[i].role === "ASSISTANT") {
-      next[i] = {
-        ...next[i],
+  for (let index = next.length - 1; index >= 0; index -= 1) {
+    if (next[index].role === "ASSISTANT") {
+      next[index] = {
+        ...next[index],
         citations,
       };
       break;
@@ -81,9 +84,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
-    null,
-  );
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
@@ -92,7 +93,6 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const latestMetaRef = useRef<StreamMetaEvent | null>(null);
 
   const activeSession = useMemo(
     () => sessions.find((session) => session.id === activeSessionId) || null,
@@ -100,10 +100,16 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   );
 
   const refreshSessions = useCallback(async () => {
-    const data = await getChatSessions();
-    setSessions(data);
-    return data;
-  }, []);
+    const result = await getChatSessions({
+      page: 1,
+      limit: 50,
+      documentId,
+    });
+
+    const nextSessions = result.data;
+    setSessions(nextSessions);
+    return nextSessions;
+  }, [documentId]);
 
   const loadSessionMessages = useCallback(async (sessionId: string) => {
     setIsLoadingMessages(true);
@@ -141,20 +147,10 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       setError(null);
 
       try {
-        const data = await refreshSessions();
+        const nextSessions = await refreshSessions();
 
-        const matchingSession =
-          data.find(
-            (session) =>
-              "documentId" in session &&
-              String(
-                (session as ChatSession & { documentId?: string | null })
-                  .documentId,
-              ) === String(documentId),
-          ) || data[0];
-
-        if (matchingSession) {
-          await loadSessionMessages(matchingSession.id);
+        if (nextSessions.length > 0) {
+          await loadSessionMessages(nextSessions[0].id);
         } else {
           setMessages([]);
           setActiveSessionId(null);
@@ -167,7 +163,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     };
 
     void init();
-  }, [documentId, isCheckingAuth, loadSessionMessages, refreshSessions]);
+  }, [isCheckingAuth, loadSessionMessages, refreshSessions]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,16 +177,14 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   }, [input]);
 
   const { isStreaming, startStream } = useChatStream({
-    onMeta: (meta: StreamMetaEvent) => {
-      latestMetaRef.current = meta;
-
-      if (meta?.sessionId) {
-        setActiveSessionId((prev) => prev ?? String(meta.sessionId));
+    onMeta: (meta: StreamMetaPayload) => {
+      if (meta.sessionId) {
+        setActiveSessionId((prev) => prev ?? meta.sessionId);
       }
 
       const citations = meta.usedChunks ?? [];
 
-      if (citations.length) {
+      if (citations.length > 0) {
         setMessages((prev) => attachCitationsToLatestAssistant(prev, citations));
       }
     },
@@ -211,39 +205,12 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
         return next;
       });
     },
-    onDone: async () => {
+    onDone: async ({ sessionId }: { sessionId: string; answer: string }) => {
       try {
-        const updatedSessions = await refreshSessions();
-
-        let targetSessionId =
-          latestMetaRef.current?.sessionId?.toString() || activeSessionId;
-
-        if (!targetSessionId) {
-          const matchingSession =
-            updatedSessions.find(
-              (session) =>
-                "documentId" in session &&
-                String(
-                  (session as ChatSession & { documentId?: string | null })
-                    .documentId,
-                ) === String(documentId),
-            ) || updatedSessions[0];
-
-          if (matchingSession) {
-            targetSessionId = matchingSession.id;
-            setActiveSessionId(targetSessionId);
-          }
-        }
-
-        if (targetSessionId) {
-          const latestMessages = await getChatMessages(targetSessionId);
-          const citations = latestMetaRef.current?.usedChunks ?? [];
-
-          setMessages(attachCitationsToLatestAssistant(latestMessages, citations));
-          toast.success("Đã cập nhật hội thoại.");
-        }
-
-        latestMetaRef.current = null;
+        setActiveSessionId(sessionId);
+        await refreshSessions();
+        await loadSessionMessages(sessionId);
+        toast.success("Đã cập nhật hội thoại.");
       } catch (err) {
         setError(
           (err as Error).message || "Không thể đồng bộ dữ liệu sau khi stream",
@@ -260,7 +227,6 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
       setError(message);
       toast.error(message);
-      latestMetaRef.current = null;
     },
   });
 
@@ -269,7 +235,6 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     setMessages([]);
     setError(null);
     setInput("");
-    latestMetaRef.current = null;
     toast.success("Sẵn sàng cho cuộc trò chuyện mới.");
   }, []);
 
@@ -278,7 +243,6 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     if (!question || isStreaming) return;
 
     setError(null);
-    latestMetaRef.current = null;
 
     const optimisticUser = createTempUserMessage(question);
     const optimisticAssistant = createTempAssistantMessage();
@@ -306,9 +270,18 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
       try {
         const updated = await renameChatSession(sessionId, { title });
+
         setSessions((prev) =>
-          prev.map((session) => (session.id === sessionId ? updated : session)),
+          prev.map((session) =>
+            session.id === sessionId
+              ? {
+                  ...session,
+                  ...updated,
+                }
+              : session,
+          ),
         );
+
         setRenamingSessionId(null);
         setRenameValue("");
         toast.success("Đổi tên cuộc trò chuyện thành công.");
@@ -344,18 +317,8 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       setSessions(nextSessions);
 
       if (activeSessionId === deleteTarget.id) {
-        const matchingSession =
-          nextSessions.find(
-            (session) =>
-              "documentId" in session &&
-              String(
-                (session as ChatSession & { documentId?: string | null })
-                  .documentId,
-              ) === String(documentId),
-          ) || nextSessions[0];
-
-        if (matchingSession) {
-          await loadSessionMessages(matchingSession.id);
+        if (nextSessions.length > 0) {
+          await loadSessionMessages(nextSessions[0].id);
         } else {
           setActiveSessionId(null);
           setMessages([]);
@@ -371,13 +334,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     } finally {
       setIsDeletingSession(false);
     }
-  }, [
-    activeSessionId,
-    deleteTarget,
-    documentId,
-    loadSessionMessages,
-    sessions,
-  ]);
+  }, [activeSessionId, deleteTarget, loadSessionMessages, sessions]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -411,7 +368,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
           onSelectSession={(sessionId) => void loadSessionMessages(sessionId)}
           onStartRename={(session) => {
             setRenamingSessionId(session.id);
-            setRenameValue(session.title);
+            setRenameValue(session.title || "");
           }}
           onCancelRename={() => {
             setRenamingSessionId(null);
@@ -459,7 +416,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
         onSelectSession={(sessionId) => void loadSessionMessages(sessionId)}
         onStartRename={(session) => {
           setRenamingSessionId(session.id);
-          setRenameValue(session.title);
+          setRenameValue(session.title || "");
         }}
         onCancelRename={() => {
           setRenamingSessionId(null);
