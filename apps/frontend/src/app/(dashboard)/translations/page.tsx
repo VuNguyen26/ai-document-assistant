@@ -1,12 +1,5 @@
-import ComingSoonPage from "@/components/layout/ComingSoonPage";
+import TranslationsPageView from '@/features/translations/components/TranslationsPageView';
 
 export default function TranslationsPage() {
-  return (
-    <ComingSoonPage
-      eyebrow="Translations"
-      title="Translations"
-      description="Module translations sẽ hỗ trợ dịch document, summary hoặc câu trả lời AI sang ngôn ngữ đích."
-      badge="AI translation"
-    />
-  );
+  return <TranslationsPageView />;
 }
