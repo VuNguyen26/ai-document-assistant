@@ -30,10 +30,11 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  documents     Document[]
-  chatSessions  ChatSession[]
-  workspaces    Workspace[]
+  refreshTokens          RefreshToken[]
+  documents              Document[]
+  chatSessions           ChatSession[]
+  workspaces             Workspace[]
+  documentProcessingJobs DocumentProcessingJob[]
 
   @@map("users")
 }
@@ -66,6 +67,20 @@ enum DocumentStatus {
   DELETED
 }
 
+enum DocumentProcessingJobType {
+  PROCESS
+  REPROCESS
+}
+
+enum DocumentProcessingJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
 model Document {
   id               String         @id @default(uuid())
   userId           String         @map("user_id")
@@ -82,7 +97,7 @@ model Document {
   updatedAt        DateTime       @updatedAt @map("updated_at")
   deletedAt        DateTime?      @map("deleted_at")
 
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   content        DocumentContent?
   chunks         DocumentChunk[]
   summaries      Summary[]
@@ -90,9 +105,35 @@ model Document {
   audioVersions  AudioVersion[]
   chatSessions   ChatSession[]
   workspaceLinks WorkspaceDocument[]
+  processingJobs DocumentProcessingJob[]
 
   @@index([userId])
   @@map("documents")
+}
+
+model DocumentProcessingJob {
+  id           String                      @id @default(uuid())
+  userId       String                      @map("user_id")
+  documentId   String                      @map("document_id")
+  type         DocumentProcessingJobType
+  status       DocumentProcessingJobStatus @default(QUEUED)
+  attempts     Int                         @default(0)
+  maxAttempts  Int                         @default(3) @map("max_attempts")
+  errorMessage String?                     @map("error_message")
+  lockedAt     DateTime?                   @map("locked_at")
+  startedAt    DateTime?                   @map("started_at")
+  completedAt  DateTime?                   @map("completed_at")
+  nextRunAt    DateTime                    @default(now()) @map("next_run_at")
+  createdAt    DateTime                    @default(now()) @map("created_at")
+  updatedAt    DateTime                    @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([status, nextRunAt])
+  @@map("document_processing_jobs")
 }
 
 model DocumentContent {

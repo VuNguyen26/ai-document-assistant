@@ -4,12 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DocumentStatus, Prisma } from '@prisma/client';
-import { extname, basename } from 'path';
+import { basename, extname } from 'path';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
-import { ChunksService } from '../chunks/chunks.service';
-import { EmbeddingsService } from '../embeddings/embeddings.service';
-import { ExtractionService } from '../extraction/extraction.service';
+import { DocumentPipelineService } from './document-pipeline.service';
+import { DocumentProcessingJobsService } from './document-processing-jobs.service';
 import type { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
 import type { UploadDocumentDto } from './dto/upload-document.dto';
 import type { UploadedFile } from './interfaces/uploaded-file.interface';
@@ -47,13 +46,25 @@ const INCOMPLETE_STATUSES: DocumentStatus[] = [
   DocumentStatus.CHUNKED,
 ];
 
+type LatestJob = {
+  id: string;
+  type: string;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  errorMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt: Date | null;
+  nextRunAt: Date;
+};
+
 @Injectable()
 export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly extractionService: ExtractionService,
-    private readonly chunksService: ChunksService,
-    private readonly embeddingsService: EmbeddingsService,
+    private readonly documentPipelineService: DocumentPipelineService,
+    private readonly documentProcessingJobsService: DocumentProcessingJobsService,
   ) {}
 
   async upload(userId: string, dto: UploadDocumentDto, file: UploadedFile) {
@@ -80,7 +91,19 @@ export class DocumentsService {
       select: DOCUMENT_SELECT,
     });
 
-    return this.serializeDocument(document);
+    const job = await this.documentProcessingJobsService.enqueueProcessJob(
+      userId,
+      document.id,
+    );
+
+    return {
+      message: 'Tải tài liệu thành công và đã đưa vào hàng đợi xử lý.',
+      data: {
+        document: this.serializeDocument(document, job),
+        autoQueued: true,
+        job,
+      },
+    };
   }
 
   async findAll(userId: string, query: ListDocumentsQueryDto) {
@@ -165,8 +188,15 @@ export class DocumentsService {
         }),
       ]);
 
+    const latestJobs = await this.findLatestJobsForDocuments(
+      userId,
+      documents.map((document) => document.id),
+    );
+
     return {
-      items: documents.map((document) => this.serializeDocument(document)),
+      items: documents.map((document) =>
+        this.serializeDocument(document, latestJobs.get(document.id) ?? null),
+      ),
       pagination: {
         page,
         limit,
@@ -184,7 +214,13 @@ export class DocumentsService {
 
   async findOne(userId: string, id: string) {
     const document = await this.findOwnedDocumentOrThrow(userId, id);
-    return this.serializeDocument(document);
+    const latestJob =
+      await this.documentProcessingJobsService.getLatestJobForDocument(
+        userId,
+        id,
+      );
+
+    return this.serializeDocument(document, latestJob);
   }
 
   async softDelete(userId: string, id: string) {
@@ -204,122 +240,63 @@ export class DocumentsService {
   }
 
   async processDocument(userId: string, id: string) {
-    let pipelineState = await this.getPipelineState(userId, id);
+    await this.findOwnedDocumentOrThrow(userId, id);
 
-    if (pipelineState.status === DocumentStatus.PROCESSING) {
-      throw new BadRequestException('Tài liệu đang được xử lý. Vui lòng thử lại sau.');
-    }
-
-    if (
-      pipelineState.status === DocumentStatus.READY &&
-      pipelineState.embeddingCount > 0
-    ) {
-      const document = await this.findOwnedDocumentOrThrow(userId, id);
-
-      return {
-        message: 'Tài liệu đã sẵn sàng để chat.',
-        data: {
-          document: this.serializeDocument(document),
-          stepsRun: [] as string[],
-          completed: true,
-          reprocessed: false,
-        },
-      };
-    }
-
-    const stepsRun: string[] = [];
-
-    if (
-      !pipelineState.hasContent ||
-      pipelineState.status === DocumentStatus.UPLOADED ||
-      pipelineState.status === DocumentStatus.FAILED
-    ) {
-      await this.extractionService.extractDocument(id, userId);
-      stepsRun.push('extract');
-      pipelineState = await this.getPipelineState(userId, id);
-    }
-
-    if (pipelineState.chunkCount === 0) {
-      await this.chunksService.chunkDocument(id, userId);
-      stepsRun.push('chunk');
-      pipelineState = await this.getPipelineState(userId, id);
-    }
-
-    if (pipelineState.embeddingCount === 0) {
-      await this.embeddingsService.embedDocument(id, userId);
-      stepsRun.push('embed');
-      pipelineState = await this.getPipelineState(userId, id);
-    }
+    const job = await this.documentProcessingJobsService.enqueueProcessJob(
+      userId,
+      id,
+    );
 
     const document = await this.findOwnedDocumentOrThrow(userId, id);
 
     return {
-      message: 'Xử lý tài liệu hoàn tất.',
+      message: 'Đã đưa tài liệu vào hàng đợi xử lý.',
       data: {
-        document: this.serializeDocument(document),
-        stepsRun,
-        completed: document.status === DocumentStatus.READY,
+        document: this.serializeDocument(document, job),
+        job,
+        stepsRun: [] as string[],
+        completed: false,
         reprocessed: false,
+        queued: true,
       },
     };
   }
 
   async reprocessDocument(userId: string, id: string) {
-    const pipelineState = await this.getPipelineState(userId, id);
+    await this.findOwnedDocumentOrThrow(userId, id);
 
-    if (pipelineState.status === DocumentStatus.PROCESSING) {
-      throw new BadRequestException('Tài liệu đang được xử lý. Vui lòng thử lại sau.');
-    }
+    const job = await this.documentProcessingJobsService.enqueueReprocessJob(
+      userId,
+      id,
+    );
 
-    await this.resetPipelineData(id);
-
-    const result = await this.processDocument(userId, id);
-    const refreshedDocument = await this.findOwnedDocumentOrThrow(userId, id);
+    const document = await this.findOwnedDocumentOrThrow(userId, id);
 
     return {
-      message: 'Đã reprocess tài liệu từ đầu.',
+      message: 'Đã đưa tài liệu vào hàng đợi reprocess.',
       data: {
-        ...result.data,
-        document: this.serializeDocument(refreshedDocument),
+        document: this.serializeDocument(document, job),
+        job,
+        stepsRun: [] as string[],
+        completed: false,
         reprocessed: true,
+        queued: true,
       },
     };
   }
 
-  private async resetPipelineData(documentId: string) {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.documentChunkEmbedding.deleteMany({
-        where: {
-          chunk: {
-            documentId,
-          },
-        },
-      });
-
-      await tx.documentChunk.deleteMany({
-        where: {
-          documentId,
-        },
-      });
-
-      await tx.documentContent.deleteMany({
-        where: {
-          documentId,
-        },
-      });
-
-      await tx.document.update({
-        where: {
-          id: documentId,
-        },
-        data: {
-          status: DocumentStatus.UPLOADED,
-          sourceLanguage: null,
-          pageCount: null,
-          errorMessage: null,
-        },
-      });
-    });
+  async listDocumentJobs(
+    userId: string,
+    documentId: string,
+    page: number,
+    limit: number,
+  ) {
+    return this.documentProcessingJobsService.listJobsForDocument(
+      userId,
+      documentId,
+      page,
+      limit,
+    );
   }
 
   private async findOwnedDocumentOrThrow(userId: string, id: string) {
@@ -339,47 +316,59 @@ export class DocumentsService {
     return document;
   }
 
-  private async getPipelineState(userId: string, id: string) {
-    const document = await this.prisma.document.findFirst({
-      where: {
-        id,
-        userId,
-        deletedAt: null,
-      },
-      select: {
-        ...DOCUMENT_SELECT,
-        content: {
-          select: {
-            id: true,
-          },
-        },
-        _count: {
-          select: {
-            chunks: true,
-          },
-        },
-      },
-    });
-
-    if (!document) {
-      throw new NotFoundException('Không tìm thấy tài liệu');
+  private async findLatestJobsForDocuments(userId: string, documentIds: string[]) {
+    if (documentIds.length === 0) {
+      return new Map<string, LatestJob>();
     }
 
-    const embeddingCount = await this.prisma.documentChunkEmbedding.count({
-      where: {
-        chunk: {
-          documentId: id,
-        },
-      },
-    });
+    const jobs = await this.prisma.$queryRawUnsafe<
+      Array<{
+        id: string;
+        userId: string;
+        documentId: string;
+        type: string;
+        status: string;
+        attempts: number;
+        maxAttempts: number;
+        errorMessage: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        completedAt: Date | null;
+        nextRunAt: Date;
+      }>
+    >(
+      `
+        SELECT
+          id,
+          user_id AS "userId",
+          document_id AS "documentId",
+          type,
+          status,
+          attempts,
+          max_attempts AS "maxAttempts",
+          error_message AS "errorMessage",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt",
+          completed_at AS "completedAt",
+          next_run_at AS "nextRunAt"
+        FROM document_processing_jobs
+        WHERE user_id = $1
+          AND document_id = ANY($2::uuid[])
+        ORDER BY document_id ASC, created_at DESC
+      `,
+      userId,
+      documentIds,
+    );
 
-    return {
-      document,
-      status: document.status,
-      hasContent: Boolean(document.content),
-      chunkCount: document._count.chunks,
-      embeddingCount,
-    };
+    const latestJobMap = new Map<string, LatestJob>();
+
+    for (const job of jobs) {
+      if (!latestJobMap.has(job.documentId)) {
+        latestJobMap.set(job.documentId, job);
+      }
+    }
+
+    return latestJobMap;
   }
 
   private validateFile(file: UploadedFile) {
@@ -403,25 +392,42 @@ export class DocumentsService {
     return basename(originalFilename, extension).trim() || 'Untitled Document';
   }
 
-  private serializeDocument(document: {
-    id: string;
-    userId: string;
-    title: string;
-    originalFilename: string;
-    storageKey: string;
-    mimeType: string;
-    fileSize: bigint;
-    sourceLanguage: string | null;
-    pageCount: number | null;
-    status: DocumentStatus;
-    errorMessage: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    deletedAt: Date | null;
-  }) {
+  private serializeDocument(
+    document: {
+      id: string;
+      userId: string;
+      title: string;
+      originalFilename: string;
+      storageKey: string;
+      mimeType: string;
+      fileSize: bigint;
+      sourceLanguage: string | null;
+      pageCount: number | null;
+      status: DocumentStatus;
+      errorMessage: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      deletedAt: Date | null;
+    },
+    latestJob?: LatestJob | null,
+  ) {
     return {
       ...document,
       fileSize: document.fileSize.toString(),
+      latestJob: latestJob
+        ? {
+            id: latestJob.id,
+            type: latestJob.type,
+            status: latestJob.status,
+            attempts: latestJob.attempts,
+            maxAttempts: latestJob.maxAttempts,
+            errorMessage: latestJob.errorMessage,
+            createdAt: latestJob.createdAt,
+            updatedAt: latestJob.updatedAt,
+            completedAt: latestJob.completedAt,
+            nextRunAt: latestJob.nextRunAt,
+          }
+        : null,
     };
   }
 }

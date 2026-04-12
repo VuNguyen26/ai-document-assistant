@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
+import { extname, join } from 'path';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -24,6 +24,7 @@ import { ChunksService } from '../chunks/chunks.service';
 import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { ExtractionService } from '../extraction/extraction.service';
 import { DocumentsService } from './documents.service';
+import { ListDocumentJobsQueryDto } from './dto/list-document-jobs-query.dto';
 import { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import type { UploadedFile as UploadedDocumentFile } from './interfaces/uploaded-file.interface';
@@ -78,6 +79,20 @@ export class DocumentsController {
     return this.documentsService.findOne(user.id, id);
   }
 
+  @Get(':id/jobs')
+  listJobs(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query() query: ListDocumentJobsQueryDto,
+  ) {
+    return this.documentsService.listDocumentJobs(
+      user.id,
+      id,
+      query.page ?? 1,
+      query.limit ?? 10,
+    );
+  }
+
   @HttpCode(200)
   @Post(':id/process')
   process(
@@ -105,15 +120,6 @@ export class DocumentsController {
     return this.extractionService.extractDocument(id, user.id);
   }
 
-  @HttpCode(200)
-  @Post(':id/chunk')
-  chunk(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ) {
-    return this.chunksService.chunkDocument(id, user.id);
-  }
-
   @Get(':id/chunks')
   findChunks(
     @CurrentUser() user: AuthenticatedUser,
@@ -123,12 +129,12 @@ export class DocumentsController {
   }
 
   @HttpCode(200)
-  @Delete(':id')
-  softDelete(
+  @Post(':id/chunk')
+  chunk(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
-    return this.documentsService.softDelete(user.id, id);
+    return this.chunksService.chunkDocument(id, user.id);
   }
 
   @HttpCode(200)
@@ -138,5 +144,14 @@ export class DocumentsController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ) {
     return this.embeddingsService.embedDocument(id, user.id);
+  }
+
+  @HttpCode(200)
+  @Delete(':id')
+  softDelete(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.documentsService.softDelete(user.id, id);
   }
 }
