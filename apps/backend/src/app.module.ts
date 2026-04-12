@@ -14,6 +14,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { SummariesModule } from './modules/summaries/summaries.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { AudioModule } from './modules/audio/audio.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     SummariesModule,
     TranslationsModule,
     WorkspacesModule,
+    AudioModule,
   ],
 })
 export class AppModule {}

@@ -530,6 +530,14 @@ export default function DocumentDetailView({
                 >
                   Chat với tài liệu
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push(`/documents/${document.id}/audio`)}
+                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Audio / TTS
+                </button>
               </div>
             </div>
 
@@ -608,8 +616,8 @@ export default function DocumentDetailView({
             <div className="space-y-6">
               <DocumentJobsPanel
                 documentId={documentId}
-                latestJob={(document as any)?.latestJob ?? null}
-                documentStatus={(document as any)?.status ?? null}
+                latestJob={document.latestJob ?? null}
+                documentStatus={document.status ?? null}
                 onRefreshDocument={refreshDocumentDetail}
               />
 
@@ -774,6 +782,7 @@ export default function DocumentDetailView({
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <input
                     type="text"
+                    aria-label="Tìm trong extracted content"
                     value={contentSearch}
                     onChange={(e) => setContentSearch(e.target.value)}
                     placeholder="Tìm trong nội dung..."
@@ -868,6 +877,7 @@ export default function DocumentDetailView({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="text"
+                    aria-label="Tìm trong document chunks"
                     value={chunkSearch}
                     onChange={(e) => setChunkSearch(e.target.value)}
                     placeholder="Tìm trong chunks..."

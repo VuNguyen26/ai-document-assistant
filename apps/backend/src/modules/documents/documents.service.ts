@@ -353,7 +353,7 @@ export class DocumentsService {
           next_run_at AS "nextRunAt"
         FROM document_processing_jobs
         WHERE user_id = $1
-          AND document_id = ANY($2::uuid[])
+          AND document_id = ANY($2::text[])
         ORDER BY document_id ASC, created_at DESC
       `,
       userId,
