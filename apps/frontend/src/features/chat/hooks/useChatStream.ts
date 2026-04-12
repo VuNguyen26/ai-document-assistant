@@ -1,118 +1,32 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import {
-  buildAuthorizedStreamRequestInit,
-  getChatStreamUrl,
-} from "../api/chat.api";
-import type {
-  AskChatPayload,
-  StreamEvent,
-  UseChatStreamOptions,
-} from "../types/chat.types";
+import { streamChat } from "../api/chat.api";
+import type { AskChatPayload, ChatCitation } from "../types/chat.types";
 
-function tryParseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
+type StreamMetaEvent = {
+  sessionId: string;
+  question: string;
+  documentId: string | null;
+  workspaceId: string | null;
+  documentIds: string[];
+  topK: number;
+  usedChunks: ChatCitation[];
+};
 
-function extractDeltaValue(raw: string): string {
-  const parsed = tryParseJson(raw);
-
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    "content" in parsed &&
-    typeof (parsed as { content?: unknown }).content === "string"
-  ) {
-    return (parsed as { content: string }).content;
-  }
-
-  return raw;
-}
-
-function extractErrorValue(raw: string): string {
-  const parsed = tryParseJson(raw);
-
-  if (
-    parsed &&
-    typeof parsed === "object" &&
-    "message" in parsed &&
-    typeof (parsed as { message?: unknown }).message === "string"
-  ) {
-    return (parsed as { message: string }).message;
-  }
-
-  return raw || "Streaming failed";
-}
-
-function parseSseChunk(buffer: string): {
-  events: StreamEvent[];
-  rest: string;
-} {
-  const rawEvents = buffer.split("\n\n");
-  const completeEvents = rawEvents.slice(0, -1);
-  const rest = rawEvents[rawEvents.length - 1] || "";
-
-  const events: StreamEvent[] = [];
-
-  for (const rawEvent of completeEvents) {
-    const lines = rawEvent.split("\n");
-    let eventName = "message";
-    const dataLines: string[] = [];
-
-    for (const line of lines) {
-      if (line.startsWith("event:")) {
-        eventName = line.replace("event:", "").trim();
-      } else if (line.startsWith("data:")) {
-        dataLines.push(line.replace("data:", "").trim());
-      }
-    }
-
-    const joinedData = dataLines.join("\n");
-
-    if (eventName === "delta") {
-      events.push({ type: "delta", data: extractDeltaValue(joinedData) });
-      continue;
-    }
-
-    if (eventName === "done") {
-      const parsed = joinedData ? tryParseJson(joinedData) ?? joinedData : undefined;
-      events.push({ type: "done", data: parsed });
-      continue;
-    }
-
-    if (eventName === "meta") {
-      try {
-        const parsed = joinedData ? JSON.parse(joinedData) : {};
-        events.push({ type: "meta", data: parsed });
-      } catch {
-        events.push({ type: "meta", data: {} });
-      }
-      continue;
-    }
-
-    if (eventName === "error") {
-      events.push({
-        type: "error",
-        data: extractErrorValue(joinedData),
-      });
-    }
-  }
-
-  return { events, rest };
-}
+type UseChatStreamOptions = {
+  onMeta?: (meta: StreamMetaEvent) => void;
+  onDelta?: (delta: string) => void;
+  onDone?: (payload: { sessionId: string; answer: string }) => void;
+  onError?: (message: string) => void;
+};
 
 export function useChatStream(options?: UseChatStreamOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const isStoppedRef = useRef(false);
 
   const stop = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
+    isStoppedRef.current = true;
     setIsStreaming(false);
   }, []);
 
@@ -121,79 +35,35 @@ export function useChatStream(options?: UseChatStreamOptions) {
       if (isStreaming) return;
 
       setIsStreaming(true);
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+      isStoppedRef.current = false;
 
       try {
-        const requestInit = await buildAuthorizedStreamRequestInit(payload);
-
-        const response = await fetch(getChatStreamUrl(), {
-          ...requestInit,
-          signal: controller.signal,
+        await streamChat(payload, {
+          onMeta: (meta) => {
+            if (isStoppedRef.current) return;
+            options?.onMeta?.(meta);
+          },
+          onDelta: ({ content }) => {
+            if (isStoppedRef.current) return;
+            options?.onDelta?.(content);
+          },
+          onDone: (data) => {
+            if (isStoppedRef.current) return;
+            options?.onDone?.(data);
+          },
+          onError: ({ message }) => {
+            if (isStoppedRef.current) return;
+            options?.onError?.(message || "Streaming failed");
+          },
         });
-
-        if (!response.ok) {
-          let message = `Streaming failed with status ${response.status}`;
-          try {
-            const errorBody = await response.json();
-            message = errorBody?.message || errorBody?.error || message;
-          } catch {
-            // ignore
-          }
-          throw new Error(message);
-        }
-
-        if (!response.body) {
-          throw new Error("Response body is empty");
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          const parsed = parseSseChunk(buffer);
-          buffer = parsed.rest;
-
-          for (const event of parsed.events) {
-            if (event.type === "meta") {
-              options?.onMeta?.(event.data);
-            } else if (event.type === "delta") {
-              options?.onDelta?.(event.data);
-            } else if (event.type === "done") {
-              options?.onDone?.();
-            } else if (event.type === "error") {
-              options?.onError?.(event.data);
-            }
-          }
-        }
-
-        if (buffer.trim()) {
-          const parsed = parseSseChunk(`${buffer}\n\n`);
-          for (const event of parsed.events) {
-            if (event.type === "meta") {
-              options?.onMeta?.(event.data);
-            } else if (event.type === "delta") {
-              options?.onDelta?.(event.data);
-            } else if (event.type === "done") {
-              options?.onDone?.();
-            } else if (event.type === "error") {
-              options?.onError?.(event.data);
-            }
-          }
-        }
       } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          options?.onError?.((error as Error).message || "Streaming failed");
+        if (!isStoppedRef.current) {
+          options?.onError?.(
+            error instanceof Error ? error.message : "Streaming failed",
+          );
         }
       } finally {
         setIsStreaming(false);
-        abortControllerRef.current = null;
       }
     },
     [isStreaming, options],

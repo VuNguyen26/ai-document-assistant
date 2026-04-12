@@ -1,3 +1,5 @@
+import type { DocumentProcessingJob } from "./document-jobs.types";
+
 export type DocumentStatus =
   | "UPLOADED"
   | "PROCESSING"
@@ -22,6 +24,7 @@ export type DocumentItem = {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  latestJob?: DocumentProcessingJob | null;
 };
 
 export type DocumentsListResponse = {
@@ -40,7 +43,15 @@ export type DocumentsListResponse = {
   };
 };
 
-export type UploadDocumentResponse = DocumentItem;
+export type UploadDocumentResponse = {
+  document: DocumentItem;
+  autoQueued: boolean;
+  job: DocumentProcessingJob;
+};
+
+export type DeleteDocumentResponse = {
+  message: string;
+};
 
 export type DocumentContent = {
   id: string;
@@ -70,9 +81,17 @@ export type DocumentDetailResponse = DocumentItem & {
   chunks?: DocumentChunk[] | null;
 };
 
-export type DocumentActionResult = {
+export type DocumentActionData = {
+  document?: DocumentItem;
+  job?: DocumentProcessingJob;
+  stepsRun?: string[];
+  completed?: boolean;
+  reprocessed?: boolean;
+  queued?: boolean;
+};
+
+export type DocumentActionResult = DocumentActionData & {
   message?: string;
   status?: string;
-  document?: DocumentItem;
   documentId?: string;
 };

@@ -14,6 +14,7 @@ import {
   processDocument,
   reprocessDocument,
 } from "../api/documents.api";
+import DocumentJobsPanel from "./DocumentJobsPanel";
 import type {
   DocumentChunk,
   DocumentDetailResponse,
@@ -295,6 +296,20 @@ export default function DocumentDetailView({
     }
   }
 
+  async function refreshDocumentDetail() {
+    try {
+      const [documentData, chunkData] = await Promise.all([
+        getDocumentById(documentId),
+        getDocumentChunks(documentId).catch(() => chunks),
+      ]);
+
+      setDocument(documentData);
+      setChunks(chunkData);
+    } catch {
+      // silent refresh for polling panel
+    }
+  }
+
   async function runAction(
     type: "process" | "reprocess" | "extract" | "chunk" | "embed",
   ) {
@@ -304,10 +319,12 @@ export default function DocumentDetailView({
 
       if (type === "process") {
         const result = await processDocument(documentId);
-        toast.success(result.message || "Xử lý tài liệu hoàn tất.");
+        toast.success(result.message || "Đã đưa tài liệu vào hàng đợi xử lý.");
       } else if (type === "reprocess") {
         const result = await reprocessDocument(documentId);
-        toast.success(result.message || "Reprocess tài liệu hoàn tất.");
+        toast.success(
+          result.message || "Đã đưa tài liệu vào hàng đợi reprocess.",
+        );
       } else if (type === "extract") {
         await extractDocument(documentId);
         toast.success("Extract thành công.");
@@ -331,7 +348,7 @@ export default function DocumentDetailView({
   }
 
   useEffect(() => {
-    loadDocument();
+    void loadDocument();
   }, [documentId]);
 
   const extractedText = useMemo(() => {
@@ -456,7 +473,7 @@ export default function DocumentDetailView({
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => runAction("process")}
+                  onClick={() => void runAction("process")}
                   disabled={!canProcess}
                   className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
@@ -480,7 +497,7 @@ export default function DocumentDetailView({
 
                 <button
                   type="button"
-                  onClick={() => runAction("extract")}
+                  onClick={() => void runAction("extract")}
                   disabled={!canExtract}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -489,7 +506,7 @@ export default function DocumentDetailView({
 
                 <button
                   type="button"
-                  onClick={() => runAction("chunk")}
+                  onClick={() => void runAction("chunk")}
                   disabled={!canChunk}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -498,7 +515,7 @@ export default function DocumentDetailView({
 
                 <button
                   type="button"
-                  onClick={() => runAction("embed")}
+                  onClick={() => void runAction("embed")}
                   disabled={!canEmbed}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -588,148 +605,157 @@ export default function DocumentDetailView({
           </div>
 
           {activeTab === "overview" ? (
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    Tổng quan tài liệu
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Metadata và trạng thái hiện tại của document.
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <DocumentJobsPanel
+                documentId={documentId}
+                latestJob={(document as any)?.latestJob ?? null}
+                documentStatus={(document as any)?.status ?? null}
+                onRefreshDocument={refreshDocumentDetail}
+              />
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      MIME Type
-                    </p>
-                    <p className="mt-2 break-words text-sm font-medium text-slate-700">
-                      {document.mimeType}
+              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="mb-5">
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      Tổng quan tài liệu
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Metadata và trạng thái hiện tại của document.
                     </p>
                   </div>
 
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Kích thước
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">
-                      {formatBytes(document.fileSize)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Ngôn ngữ
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">
-                      {document.sourceLanguage || "Chưa xác định"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Số trang
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">
-                      {document.pageCount ?? "Chưa có"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Tạo lúc
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">
-                      {formatDate(document.createdAt)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Cập nhật
-                    </p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">
-                      {formatDate(document.updatedAt)}
-                    </p>
-                  </div>
-                </div>
-
-                {document.errorMessage ? (
-                  <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    {document.errorMessage}
-                  </div>
-                ) : null}
-              </section>
-
-              <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mb-5">
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    Pipeline trạng thái
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    READY chỉ xuất hiện sau khi embed thành công.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    {
-                      title: "1. Extract",
-                      desc: "Trích xuất nội dung text từ file gốc.",
-                      active: hasExtractedText,
-                    },
-                    {
-                      title: "2. Chunk",
-                      desc: "Chia document thành các chunk để retrieval.",
-                      active: hasChunks,
-                    },
-                    {
-                      title: "3. Embed",
-                      desc: "Sinh vector embedding để semantic search và chat.",
-                      active: isReady,
-                    },
-                  ].map((step) => (
-                    <div
-                      key={step.title}
-                      className={`rounded-2xl border p-4 ${
-                        step.active
-                          ? "border-emerald-200 bg-emerald-50"
-                          : "border-slate-200 bg-slate-50"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900">
-                            {step.title}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {step.desc}
-                          </p>
-                        </div>
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            step.active
-                              ? "bg-white text-emerald-700"
-                              : "bg-white text-slate-500"
-                          }`}
-                        >
-                          {step.active ? "Done" : "Pending"}
-                        </span>
-                      </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        MIME Type
+                      </p>
+                      <p className="mt-2 break-words text-sm font-medium text-slate-700">
+                        {document.mimeType}
+                      </p>
                     </div>
-                  ))}
-                </div>
 
-                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">
-                    Chunk count
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-900">
-                    {chunks.length}
-                  </p>
-                </div>
-              </section>
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Kích thước
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {formatBytes(document.fileSize)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Ngôn ngữ
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {document.sourceLanguage || "Chưa xác định"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Số trang
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {document.pageCount ?? "Chưa có"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Tạo lúc
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {formatDate(document.createdAt)}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Cập nhật
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-slate-700">
+                        {formatDate(document.updatedAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {document.errorMessage ? (
+                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      {document.errorMessage}
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <div className="mb-5">
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      Pipeline trạng thái
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      READY chỉ xuất hiện sau khi embed thành công.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      {
+                        title: "1. Extract",
+                        desc: "Trích xuất nội dung text từ file gốc.",
+                        active: hasExtractedText,
+                      },
+                      {
+                        title: "2. Chunk",
+                        desc: "Chia document thành các chunk để retrieval.",
+                        active: hasChunks,
+                      },
+                      {
+                        title: "3. Embed",
+                        desc: "Sinh vector embedding để semantic search và chat.",
+                        active: isReady,
+                      },
+                    ].map((step) => (
+                      <div
+                        key={step.title}
+                        className={`rounded-2xl border p-4 ${
+                          step.active
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-slate-200 bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              {step.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {step.desc}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-medium ${
+                              step.active
+                                ? "bg-white text-emerald-700"
+                                : "bg-white text-slate-500"
+                            }`}
+                          >
+                            {step.active ? "Done" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Chunk count
+                    </p>
+                    <p className="mt-2 text-2xl font-semibold text-slate-900">
+                      {chunks.length}
+                    </p>
+                  </div>
+                </section>
+              </div>
             </div>
           ) : null}
 

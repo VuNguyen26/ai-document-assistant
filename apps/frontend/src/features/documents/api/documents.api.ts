@@ -1,10 +1,10 @@
 import { refreshAccessToken } from "@/features/auth/api/auth.api";
 import { clearAuthSession, getAccessToken } from "@/lib/auth/token-storage";
 import type {
+  DeleteDocumentResponse,
   DocumentActionResult,
   DocumentChunk,
   DocumentDetailResponse,
-  DocumentItem,
   DocumentsListResponse,
   UploadDocumentResponse,
 } from "../types/documents.types";
@@ -173,13 +173,14 @@ export async function uploadDocument(
   return unwrapData(result);
 }
 
-export async function deleteDocument(documentId: string): Promise<DocumentItem> {
-  const result = await apiFetch<DocumentItem | ApiEnvelope<DocumentItem>>(
-    `/documents/${documentId}`,
-    {
-      method: "DELETE",
-    },
-  );
+export async function deleteDocument(
+  documentId: string,
+): Promise<DeleteDocumentResponse> {
+  const result = await apiFetch<
+    DeleteDocumentResponse | ApiEnvelope<DeleteDocumentResponse>
+  >(`/documents/${documentId}`, {
+    method: "DELETE",
+  });
 
   return unwrapData(result);
 }

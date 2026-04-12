@@ -80,7 +80,9 @@ function getPipelineAction(status: string) {
   }
 }
 
-function getActionBoxClass(tone: "amber" | "sky" | "indigo" | "blue" | "rose" | "emerald" | "slate") {
+function getActionBoxClass(
+  tone: "amber" | "sky" | "indigo" | "blue" | "rose" | "emerald" | "slate",
+) {
   switch (tone) {
     case "amber":
       return "border-amber-200 bg-amber-50 text-amber-800";
@@ -97,6 +99,47 @@ function getActionBoxClass(tone: "amber" | "sky" | "indigo" | "blue" | "rose" | 
     default:
       return "border-slate-200 bg-slate-50 text-slate-700";
   }
+}
+
+function getJobStatusClass(status: string) {
+  switch (status) {
+    case "SUCCEEDED":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "FAILED":
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    case "RUNNING":
+    case "RETRYING":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "QUEUED":
+      return "bg-sky-50 text-sky-700 border-sky-200";
+    case "CANCELLED":
+      return "bg-slate-100 text-slate-700 border-slate-200";
+    default:
+      return "bg-slate-100 text-slate-700 border-slate-200";
+  }
+}
+
+function getJobStatusLabel(status: string) {
+  switch (status) {
+    case "QUEUED":
+      return "Queued";
+    case "RUNNING":
+      return "Running";
+    case "SUCCEEDED":
+      return "Succeeded";
+    case "FAILED":
+      return "Failed";
+    case "RETRYING":
+      return "Retrying";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status;
+  }
+}
+
+function getJobTypeLabel(type: string) {
+  return type === "REPROCESS" ? "Reprocess" : "Process";
 }
 
 export default function DocumentCard({
@@ -172,6 +215,51 @@ export default function DocumentCard({
       >
         {action.label}
       </div>
+
+      {document.latestJob ? (
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Latest job
+          </p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+              {getJobTypeLabel(document.latestJob.type)}
+            </span>
+
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${getJobStatusClass(
+                document.latestJob.status,
+              )}`}
+            >
+              {getJobStatusLabel(document.latestJob.status)}
+            </span>
+
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+              Attempts {document.latestJob.attempts}/
+              {document.latestJob.maxAttempts}
+            </span>
+          </div>
+
+          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+            <p>Created: {formatDate(document.latestJob.createdAt)}</p>
+            <p>Updated: {formatDate(document.latestJob.updatedAt)}</p>
+            <p>Next run: {formatDate(document.latestJob.nextRunAt)}</p>
+            <p>
+              Completed:{" "}
+              {document.latestJob.completedAt
+                ? formatDate(document.latestJob.completedAt)
+                : "—"}
+            </p>
+          </div>
+
+          {document.latestJob.errorMessage ? (
+            <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              {document.latestJob.errorMessage}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
         <button
