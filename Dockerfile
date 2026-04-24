@@ -16,6 +16,6 @@ RUN npx prisma generate && npm run build
 
 ENV NODE_ENV=production
 
-EXPOSE 4000
+EXPOSE 8080
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
