@@ -1,0 +1,10 @@
+providers = ["node"]
+
+[phases.install]
+cmds = ["cd apps/backend && npm install"]
+
+[phases.build]
+cmds = ["cd apps/backend && npx prisma generate && npm run build"]
+
+[start]
+cmd = "cd apps/backend && npx prisma migrate deploy && node dist/main"
