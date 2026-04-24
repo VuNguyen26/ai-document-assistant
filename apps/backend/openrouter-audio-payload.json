@@ -1,0 +1,15 @@
+﻿{
+  "model": "openai/gpt-audio-mini",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Xin chào, hãy đọc câu này bằng giọng tự nhiên."
+    }
+  ],
+  "modalities": ["text", "audio"],
+  "audio": {
+    "voice": "alloy",
+    "format": "wav"
+  },
+  "stream": true
+}
