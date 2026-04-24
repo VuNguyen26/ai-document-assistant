@@ -7,4 +7,4 @@ cmds = ["cd apps/backend && npm install"]
 cmds = ["cd apps/backend && npx prisma generate && npm run build"]
 
 [start]
-cmd = "cd apps/backend && npx prisma migrate deploy && node dist/main"
+cmd = "echo DATABASE_URL_EXISTS=$([ -n \"$DATABASE_URL\" ] && echo yes || echo no) && cd apps/backend && npx prisma migrate deploy && node dist/main"
