@@ -28,6 +28,8 @@ function getStatusStyle(status: string) {
     case "CHUNKING":
     case "EMBEDDING":
       return "border-blue-100 bg-blue-50 text-blue-700";
+    case "DELETED":
+      return "border-slate-200 bg-slate-100 text-slate-500";
     default:
       return "border-slate-200 bg-slate-50 text-slate-600";
   }
@@ -36,25 +38,27 @@ function getStatusStyle(status: string) {
 function getStatusLabel(status: string) {
   switch (status) {
     case "UPLOADED":
-      return "Uploaded";
+      return "Đã tải lên";
     case "PROCESSING":
-      return "Processing";
+      return "Đang xử lý";
     case "VALIDATING":
-      return "Validating";
+      return "Đang kiểm tra";
     case "EXTRACTING":
-      return "Extracting";
+      return "Đang trích xuất";
     case "EXTRACTED":
-      return "Extracted";
+      return "Đã trích xuất";
     case "CHUNKING":
-      return "Chunking";
+      return "Đang chia đoạn";
     case "CHUNKED":
-      return "Chunked";
+      return "Đã chia đoạn";
     case "EMBEDDING":
-      return "Embedding";
+      return "Đang tạo embedding";
     case "READY":
-      return "Ready";
+      return "Sẵn sàng";
     case "FAILED":
-      return "Failed";
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
     default:
       return status;
   }
@@ -109,11 +113,11 @@ export default function ChatDocumentPageView({
         <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-rose-500" />
 
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Unable to open document chat
+          Không thể mở chat tài liệu
         </h1>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          {error || "This document does not exist or you do not have access."}
+          {error || "Tài liệu này không tồn tại hoặc bạn không có quyền truy cập."}
         </p>
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -121,14 +125,14 @@ export default function ChatDocumentPageView({
             href="/documents"
             className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
           >
-            Back to documents
+            Quay lại tài liệu
           </Link>
 
           <Link
             href={`/documents/${documentId}`}
             className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
           >
-            Open detail
+            Mở chi tiết
           </Link>
         </div>
       </div>
@@ -145,21 +149,21 @@ export default function ChatDocumentPageView({
                 href={`/documents/${document.id}`}
                 className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
               >
-                ← Back to detail
+                ← Quay lại chi tiết
               </Link>
 
               <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
-                Document chat
+                Chat tài liệu
               </span>
             </div>
 
             <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Chat with document
+              Chat với tài liệu
             </h1>
 
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
-              Ask questions based on the uploaded file. Answers should stay
-              grounded in document content and include citations when available.
+              Đặt câu hỏi dựa trên tệp đã tải lên. Câu trả lời sẽ bám sát nội
+              dung tài liệu và hiển thị trích dẫn khi có nguồn phù hợp.
             </p>
 
             <div className="mt-5 min-w-0 rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
@@ -175,13 +179,13 @@ export default function ChatDocumentPageView({
 
           <aside className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-              Document info
+              Thông tin tài liệu
             </p>
 
             <div className="mt-5 space-y-3">
               <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
                 <span className="text-sm font-medium text-slate-500">
-                  Status
+                  Trạng thái
                 </span>
 
                 <span
@@ -196,17 +200,17 @@ export default function ChatDocumentPageView({
 
               <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
                 <span className="text-sm font-medium text-slate-500">
-                  Language
+                  Ngôn ngữ
                 </span>
 
                 <span className="truncate text-sm font-semibold text-slate-900">
-                  {document.sourceLanguage || "Unknown"}
+                  {document.sourceLanguage || "Chưa xác định"}
                 </span>
               </div>
 
               <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
                 <span className="text-sm font-medium text-slate-500">
-                  Pages
+                  Số trang
                 </span>
 
                 <span className="text-sm font-semibold text-slate-900">

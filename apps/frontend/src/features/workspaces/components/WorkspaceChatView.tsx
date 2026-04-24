@@ -51,7 +51,7 @@ async function copyToClipboard(text: string, successMessage: string) {
     await navigator.clipboard.writeText(text);
     toast.success(successMessage);
   } catch {
-    toast.error("Cannot copy to clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
@@ -114,7 +114,9 @@ export default function WorkspaceChatView({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load chat sessions.",
+        error instanceof Error
+          ? error.message
+          : "Không thể tải danh sách phiên chat.",
       );
     } finally {
       setLoadingSessions(false);
@@ -128,7 +130,7 @@ export default function WorkspaceChatView({
       setMessages(data);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load chat messages.",
+        error instanceof Error ? error.message : "Không thể tải tin nhắn.",
       );
     } finally {
       setLoadingMessages(false);
@@ -142,7 +144,9 @@ export default function WorkspaceChatView({
         await Promise.all([loadWorkspace(), loadSessions(true)]);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "Cannot load workspace chat.",
+          error instanceof Error
+            ? error.message
+            : "Không thể tải chat của không gian làm việc.",
         );
       } finally {
         setLoadingWorkspace(false);
@@ -174,7 +178,7 @@ export default function WorkspaceChatView({
     const nextTitle = renameValue.trim();
 
     if (!nextTitle) {
-      toast.error("Please enter a session title.");
+      toast.error("Vui lòng nhập tiêu đề phiên chat.");
       return;
     }
 
@@ -185,11 +189,11 @@ export default function WorkspaceChatView({
 
       setRenamingSessionId(null);
       setRenameValue("");
-      toast.success("Session renamed.");
+      toast.success("Đã đổi tên phiên chat.");
       await loadSessions(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot rename session.",
+        error instanceof Error ? error.message : "Không thể đổi tên phiên chat.",
       );
     }
   }
@@ -200,7 +204,7 @@ export default function WorkspaceChatView({
     try {
       setIsDeletingSession(true);
       await deleteChatSession(deleteTarget.id);
-      toast.success("Session deleted.");
+      toast.success("Đã xóa phiên chat.");
 
       if (activeSessionId === deleteTarget.id) {
         setActiveSessionId(null);
@@ -211,7 +215,7 @@ export default function WorkspaceChatView({
       await loadSessions(true);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot delete session.",
+        error instanceof Error ? error.message : "Không thể xóa phiên chat.",
       );
     } finally {
       setIsDeletingSession(false);
@@ -224,24 +228,26 @@ export default function WorkspaceChatView({
     setQuestion("");
     setRenamingSessionId(null);
     setRenameValue("");
-    toast.success("Ready for a new workspace chat.");
+    toast.success("Sẵn sàng cho cuộc trò chuyện mới trong không gian làm việc.");
   }
 
   async function handleSendQuestion() {
     const trimmedQuestion = question.trim();
 
     if (!trimmedQuestion) {
-      toast.error("Please enter a question.");
+      toast.error("Vui lòng nhập câu hỏi.");
       return;
     }
 
     if (!workspace) {
-      toast.error("Workspace is not ready.");
+      toast.error("Không gian làm việc chưa sẵn sàng.");
       return;
     }
 
     if (workspace.readyDocumentsCount === 0) {
-      toast.error("This workspace has no READY document for chat.");
+      toast.error(
+        "Không gian làm việc này chưa có tài liệu sẵn sàng để chat.",
+      );
       return;
     }
 
@@ -305,13 +311,13 @@ export default function WorkspaceChatView({
             await loadMessages(sessionId);
           },
           onError: ({ message }) => {
-            toast.error(message || "Stream chat failed.");
+            toast.error(message || "Stream chat thất bại.");
           },
         },
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot send question.",
+        error instanceof Error ? error.message : "Không thể gửi câu hỏi.",
       );
 
       setMessages((prev) =>
@@ -346,18 +352,18 @@ export default function WorkspaceChatView({
         <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-rose-500" />
 
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Workspace not found
+          Không tìm thấy không gian làm việc
         </h1>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          This workspace does not exist or you do not have access.
+          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy cập.
         </p>
 
         <Link
           href="/workspaces"
           className="mt-6 inline-flex rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
         >
-          Back to workspaces
+          Quay lại không gian làm việc
         </Link>
       </div>
     );
@@ -376,20 +382,20 @@ export default function WorkspaceChatView({
                   href={`/workspaces/${workspaceId}`}
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Back to workspace
+                  ← Quay lại không gian
                 </Link>
 
                 <Link
                   href="/workspaces"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  Workspaces
+                  Không gian làm việc
                 </Link>
               </div>
 
               <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Workspace chat
+                Chat không gian làm việc
               </div>
 
               <h1 className="mt-5 max-w-3xl truncate text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
@@ -397,8 +403,9 @@ export default function WorkspaceChatView({
               </h1>
 
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                Ask questions across all READY documents in this workspace. The
-                answer is grounded by semantic search results from linked files.
+                Đặt câu hỏi trên tất cả tài liệu đã sẵn sàng trong không gian
+                làm việc này. Câu trả lời sẽ dựa trên kết quả tìm kiếm ngữ nghĩa
+                từ các tệp đã liên kết.
               </p>
             </div>
 
@@ -416,7 +423,7 @@ export default function WorkspaceChatView({
                 </p>
 
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  Documents
+                  Tài liệu
                 </p>
               </div>
 
@@ -433,7 +440,7 @@ export default function WorkspaceChatView({
                 </p>
 
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  Ready
+                  Sẵn sàng
                 </p>
               </div>
 
@@ -450,7 +457,7 @@ export default function WorkspaceChatView({
                 </p>
 
                 <p className="mt-2 text-sm font-semibold text-slate-900">
-                  Incomplete
+                  Chưa hoàn tất
                 </p>
               </div>
             </div>
@@ -459,8 +466,9 @@ export default function WorkspaceChatView({
 
         {workspace.readyDocumentsCount === 0 ? (
           <div className="rounded-[2rem] border border-amber-100 bg-amber-50 px-6 py-5 text-sm leading-6 text-amber-800">
-            This workspace has no READY document. Process at least one linked
-            document before starting workspace chat.
+            Không gian làm việc này chưa có tài liệu sẵn sàng. Hãy xử lý ít nhất
+            một tài liệu đã liên kết trước khi bắt đầu chat với không gian làm
+            việc.
           </div>
         ) : null}
 
@@ -470,11 +478,11 @@ export default function WorkspaceChatView({
               <div className="border-b border-slate-200 p-5">
                 <div className="mb-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                    Conversations
+                    Hội thoại
                   </p>
 
                   <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-                    Workspace sessions
+                    Phiên chat không gian
                   </h2>
                 </div>
 
@@ -483,7 +491,7 @@ export default function WorkspaceChatView({
                   onClick={handleNewChat}
                   className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
                 >
-                  New chat
+                  Chat mới
                 </button>
               </div>
 
@@ -502,11 +510,12 @@ export default function WorkspaceChatView({
                     <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
                     <p className="text-sm font-semibold text-slate-800">
-                      No conversations yet
+                      Chưa có cuộc trò chuyện
                     </p>
 
                     <p className="mx-auto mt-2 max-w-[220px] text-sm leading-6 text-slate-500">
-                      Send your first question to create a workspace chat.
+                      Gửi câu hỏi đầu tiên để tạo phiên chat trong không gian
+                      làm việc.
                     </p>
                   </div>
                 ) : (
@@ -533,7 +542,7 @@ export default function WorkspaceChatView({
                                   setRenameValue(event.target.value)
                                 }
                                 className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
-                                placeholder="New title"
+                                placeholder="Tiêu đề mới"
                               />
 
                               <div className="flex items-center justify-end gap-2">
@@ -545,7 +554,7 @@ export default function WorkspaceChatView({
                                   }}
                                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                                 >
-                                  Cancel
+                                  Hủy
                                 </button>
 
                                 <button
@@ -555,7 +564,7 @@ export default function WorkspaceChatView({
                                   }
                                   className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700"
                                 >
-                                  Save
+                                  Lưu
                                 </button>
                               </div>
                             </div>
@@ -577,7 +586,7 @@ export default function WorkspaceChatView({
 
                                   <div className="min-w-0 flex-1">
                                     <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">
-                                      {session.title || "Untitled chat"}
+                                      {session.title || "Chat chưa đặt tên"}
                                     </p>
 
                                     <p className="mt-1 text-xs font-medium text-slate-400">
@@ -596,7 +605,7 @@ export default function WorkspaceChatView({
                                   }}
                                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                                 >
-                                  Rename
+                                  Đổi tên
                                 </button>
 
                                 <button
@@ -604,7 +613,7 @@ export default function WorkspaceChatView({
                                   onClick={() => setDeleteTarget(session)}
                                   className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
                                 >
-                                  Delete
+                                  Xóa
                                 </button>
                               </div>
                             </>
@@ -623,16 +632,16 @@ export default function WorkspaceChatView({
                   <div className="min-w-0">
                     <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                      Multi-document chat
+                      Chat nhiều tài liệu
                     </div>
 
                     <h2 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">
-                      {activeSession?.title || "Workspace chat"}
+                      {activeSession?.title || "Chat không gian làm việc"}
                     </h2>
 
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Answers are generated from READY documents in this
-                      workspace.
+                      Câu trả lời được tạo từ các tài liệu đã sẵn sàng trong
+                      không gian làm việc này.
                     </p>
                   </div>
 
@@ -641,7 +650,7 @@ export default function WorkspaceChatView({
                     onClick={handleNewChat}
                     className="inline-flex h-11 w-fit items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 xl:hidden"
                   >
-                    New chat
+                    Chat mới
                   </button>
                 </div>
               </header>
@@ -666,12 +675,12 @@ export default function WorkspaceChatView({
                       <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-indigo-500" />
 
                       <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-                        Start a workspace conversation
+                        Bắt đầu cuộc trò chuyện trong không gian
                       </h3>
 
                       <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
-                        Ask a question that may require information from more
-                        than one document in this workspace.
+                        Hãy đặt câu hỏi có thể cần thông tin từ nhiều tài liệu
+                        trong không gian làm việc này.
                       </p>
                     </div>
                   ) : (
@@ -707,7 +716,7 @@ export default function WorkspaceChatView({
                                     isUser ? "text-indigo-100" : "text-slate-400"
                                   }`}
                                 >
-                                  {isUser ? "You" : "Assistant"}
+                                  {isUser ? "Bạn" : "Trợ lý"}
                                 </p>
                               </div>
 
@@ -730,8 +739,8 @@ export default function WorkspaceChatView({
                                     void copyToClipboard(
                                       message.content,
                                       isUser
-                                        ? "Question copied."
-                                        : "Answer copied.",
+                                        ? "Đã sao chép câu hỏi."
+                                        : "Đã sao chép câu trả lời.",
                                     )
                                   }
                                   className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
@@ -740,7 +749,7 @@ export default function WorkspaceChatView({
                                       : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                                   }`}
                                 >
-                                  Copy
+                                  Sao chép
                                 </button>
                               </div>
                             </div>
@@ -754,7 +763,7 @@ export default function WorkspaceChatView({
                                 <MarkdownMessage
                                   content={
                                     message.content ||
-                                    (sending ? "Assistant is writing..." : "")
+                                    (sending ? "Trợ lý đang trả lời..." : "")
                                   }
                                 />
 
@@ -775,7 +784,7 @@ export default function WorkspaceChatView({
                         <div className="flex items-center gap-3">
                           <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
                           <span className="font-medium">
-                            Assistant is writing...
+                            Trợ lý đang trả lời...
                           </span>
                         </div>
                       </div>
@@ -800,7 +809,8 @@ export default function WorkspaceChatView({
                           }
                         }}
                         rows={1}
-                        placeholder="Ask across all ready documents..."
+                        aria-label="Nhập câu hỏi cho không gian làm việc"
+                        placeholder="Hỏi trên tất cả tài liệu đã sẵn sàng..."
                         disabled={workspace.readyDocumentsCount === 0 || sending}
                         className="max-h-44 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
                       />
@@ -811,17 +821,17 @@ export default function WorkspaceChatView({
                         disabled={chatDisabled || !question.trim()}
                         className="inline-flex h-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                       >
-                        {sending ? "Sending" : "Send"}
+                        {sending ? "Đang gửi..." : "Gửi"}
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-2 flex flex-col justify-between gap-1 px-1 text-xs text-slate-400 sm:flex-row sm:items-center">
                     <span>
-                      Context is retrieved from READY documents in this
-                      workspace.
+                      Ngữ cảnh được truy xuất từ các tài liệu đã sẵn sàng trong
+                      không gian làm việc này.
                     </span>
-                    <span>{question.trim().length} characters</span>
+                    <span>{question.trim().length} ký tự</span>
                   </div>
                 </div>
               </div>
@@ -832,10 +842,12 @@ export default function WorkspaceChatView({
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Delete chat session?"
-        description={`Session "${deleteTarget?.title || "Untitled chat"}" will be removed from this workspace chat history.`}
-        confirmText="Delete session"
-        cancelText="Cancel"
+        title="Xóa phiên chat?"
+        description={`Phiên "${
+          deleteTarget?.title || "Chat chưa đặt tên"
+        }" sẽ bị xóa khỏi lịch sử chat của không gian làm việc này.`}
+        confirmText={isDeletingSession ? "Đang xóa..." : "Xóa phiên chat"}
+        cancelText="Hủy"
         tone="danger"
         loading={isDeletingSession}
         onCancel={() => {

@@ -62,6 +62,67 @@ function formatDuration(seconds?: number | null) {
   return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
+function getSourceTypeLabel(value: string) {
+  switch (value) {
+    case 'DOCUMENT':
+    case 'Document content':
+      return 'Nội dung tài liệu';
+    case 'SUMMARY':
+    case 'Summary':
+      return 'Bản tóm tắt';
+    default:
+      return value;
+  }
+}
+
+function getAudioStatusLabel(value: string) {
+  switch (value) {
+    case 'PENDING':
+      return 'Đang chờ';
+    case 'PROCESSING':
+      return 'Đang xử lý';
+    case 'READY':
+    case 'COMPLETED':
+    case 'SUCCEEDED':
+      return 'Hoàn tất';
+    case 'FAILED':
+      return 'Thất bại';
+    case 'DELETED':
+      return 'Đã xóa';
+    default:
+      return value;
+  }
+}
+
+function getDocumentStatusLabel(status?: string | null) {
+  switch (status) {
+    case 'UPLOADED':
+      return 'Đã tải lên';
+    case 'PROCESSING':
+      return 'Đang xử lý';
+    case 'VALIDATING':
+      return 'Đang kiểm tra';
+    case 'EXTRACTING':
+      return 'Đang trích xuất';
+    case 'EXTRACTED':
+      return 'Đã trích xuất';
+    case 'CHUNKING':
+      return 'Đang chia đoạn';
+    case 'CHUNKED':
+      return 'Đã chia đoạn';
+    case 'EMBEDDING':
+      return 'Đang tạo embedding';
+    case 'READY':
+      return 'Sẵn sàng';
+    case 'FAILED':
+      return 'Thất bại';
+    case 'DELETED':
+      return 'Đã xóa';
+    default:
+      return status || 'Chưa xác định';
+  }
+}
+
 export default function DocumentAudioPageView({
   documentId,
 }: DocumentAudioPageViewProps) {
@@ -127,7 +188,7 @@ export default function DocumentAudioPageView({
       await Promise.all([loadDocument(), loadSummaries(), loadAudioVersions()]);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải trang audio',
+        error instanceof Error ? error.message : 'Không thể tải trang audio.',
       );
     } finally {
       setLoading(false);
@@ -151,7 +212,7 @@ export default function DocumentAudioPageView({
 
   async function handleGenerate() {
     if (sourceType === 'SUMMARY' && !summaryId) {
-      toast.error('Bạn cần chọn summary trước.');
+      toast.error('Vui lòng chọn bản tóm tắt trước.');
       return;
     }
 
@@ -172,7 +233,7 @@ export default function DocumentAudioPageView({
       await loadAudioVersions();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Tạo audio thất bại',
+        error instanceof Error ? error.message : 'Tạo audio thất bại.',
       );
     } finally {
       setGenerating(false);
@@ -200,7 +261,7 @@ export default function DocumentAudioPageView({
       }, 50);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải file audio',
+        error instanceof Error ? error.message : 'Không thể tải tệp audio.',
       );
     } finally {
       setPlayingAudioId(null);
@@ -208,7 +269,7 @@ export default function DocumentAudioPageView({
   }
 
   async function handleDelete(audioId: string) {
-    const confirmed = window.confirm('Xóa audio version này?');
+    const confirmed = window.confirm('Xóa phiên bản audio này?');
     if (!confirmed) return;
 
     try {
@@ -218,7 +279,7 @@ export default function DocumentAudioPageView({
       await loadAudioVersions();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Xóa audio thất bại',
+        error instanceof Error ? error.message : 'Xóa audio thất bại.',
       );
     } finally {
       setDeletingId(null);
@@ -245,23 +306,28 @@ export default function DocumentAudioPageView({
               href={`/documents/${documentId}`}
               className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
-              ← Về Document
+              ← Quay lại chi tiết tài liệu
             </Link>
 
             <Link
               href="/documents"
               className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             >
-              Documents
+              Tài liệu
             </Link>
           </div>
 
-          <p className="text-sm font-medium text-slate-500">Document Audio / TTS</p>
+          <p className="text-sm font-medium text-slate-500">
+            Audio tài liệu / TTS
+          </p>
+
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
             {document?.title || 'Audio'}
           </h1>
+
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Tạo bản audio từ nội dung document hoặc summary. Lưu ý: đây là giọng nói do AI tạo ra.
+            Tạo bản audio từ nội dung tài liệu hoặc bản tóm tắt. Lưu ý: đây là
+            giọng nói do AI tạo ra.
           </p>
         </div>
 
@@ -269,10 +335,11 @@ export default function DocumentAudioPageView({
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
               <h2 className="text-lg font-semibold text-slate-900">
-                Generate audio
+                Tạo audio
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">
-                Dùng TTS để tạo file audio MP3 từ source text hiện có.
+                Dùng TTS để tạo tệp audio MP3 từ nguồn văn bản hiện có.
               </p>
             </div>
 
@@ -282,8 +349,9 @@ export default function DocumentAudioPageView({
                   htmlFor="audio-source-type"
                   className="mb-2 block text-sm font-medium text-slate-700"
                 >
-                  Source type
+                  Loại nguồn
                 </label>
+
                 <select
                   id="audio-source-type"
                   value={sourceType}
@@ -292,8 +360,8 @@ export default function DocumentAudioPageView({
                   }
                   className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                 >
-                  <option value="DOCUMENT">Document content</option>
-                  <option value="SUMMARY">Summary</option>
+                  <option value="DOCUMENT">Nội dung tài liệu</option>
+                  <option value="SUMMARY">Bản tóm tắt</option>
                 </select>
               </div>
 
@@ -303,15 +371,16 @@ export default function DocumentAudioPageView({
                     htmlFor="audio-summary-source"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Summary source
+                    Nguồn bản tóm tắt
                   </label>
+
                   <select
                     id="audio-summary-source"
                     value={summaryId}
                     onChange={(e) => setSummaryId(e.target.value)}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                   >
-                    <option value="">Chọn summary...</option>
+                    <option value="">Chọn bản tóm tắt...</option>
                     {summaries.map((summary) => (
                       <option key={summary.id} value={summary.id}>
                         {summary.summaryType} — {summary.language}
@@ -327,8 +396,9 @@ export default function DocumentAudioPageView({
                     htmlFor="audio-language"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Language
+                    Ngôn ngữ
                   </label>
+
                   <input
                     id="audio-language"
                     value={language}
@@ -343,8 +413,9 @@ export default function DocumentAudioPageView({
                     htmlFor="audio-voice"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Voice
+                    Giọng đọc
                   </label>
+
                   <select
                     id="audio-voice"
                     value={voiceName}
@@ -365,8 +436,9 @@ export default function DocumentAudioPageView({
                   htmlFor="audio-speed"
                   className="mb-2 block text-sm font-medium text-slate-700"
                 >
-                  Speed
+                  Tốc độ đọc
                 </label>
+
                 <input
                   id="audio-speed"
                   type="number"
@@ -384,8 +456,9 @@ export default function DocumentAudioPageView({
                   htmlFor="audio-instructions"
                   className="mb-2 block text-sm font-medium text-slate-700"
                 >
-                  Voice instructions
+                  Hướng dẫn giọng đọc
                 </label>
+
                 <textarea
                   id="audio-instructions"
                   rows={4}
@@ -398,13 +471,17 @@ export default function DocumentAudioPageView({
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <p>
-                  Document status:{' '}
-                  <strong className="text-slate-800">{document?.status}</strong>
+                  Trạng thái tài liệu:{' '}
+                  <strong className="text-slate-800">
+                    {getDocumentStatusLabel(document?.status)}
+                  </strong>
                 </p>
+
                 {selectedSummary ? (
                   <p className="mt-2">
-                    Summary nguồn: <strong>{selectedSummary.summaryType}</strong>{' '}
-                    • {selectedSummary.language}
+                    Bản tóm tắt nguồn:{' '}
+                    <strong>{selectedSummary.summaryType}</strong> •{' '}
+                    {selectedSummary.language}
                   </p>
                 ) : null}
               </div>
@@ -415,7 +492,7 @@ export default function DocumentAudioPageView({
                 disabled={generating}
                 className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {generating ? 'Đang tạo audio...' : 'Generate audio'}
+                {generating ? 'Đang tạo audio...' : 'Tạo audio'}
               </button>
             </div>
           </section>
@@ -423,10 +500,11 @@ export default function DocumentAudioPageView({
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5">
               <h2 className="text-lg font-semibold text-slate-900">
-                Audio history
+                Lịch sử audio
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">
-                Danh sách các audio versions đã tạo cho tài liệu này.
+                Danh sách các phiên bản audio đã tạo cho tài liệu này.
               </p>
             </div>
 
@@ -435,8 +513,9 @@ export default function DocumentAudioPageView({
                 htmlFor="audio-player"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Audio player
+                Trình phát audio
               </label>
+
               <audio
                 id="audio-player"
                 ref={audioRef}
@@ -451,9 +530,11 @@ export default function DocumentAudioPageView({
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl">
                   🔊
                 </div>
+
                 <p className="text-sm font-medium text-slate-700">
-                  Chưa có audio version nào
+                  Chưa có phiên bản audio nào
                 </p>
+
                 <p className="mt-2 text-sm text-slate-500">
                   Hãy tạo audio đầu tiên ở cột bên trái.
                 </p>
@@ -468,32 +549,37 @@ export default function DocumentAudioPageView({
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <h3 className="truncate text-base font-semibold text-slate-900">
-                          {audio.documentTitle || 'Untitled document'}
+                          {audio.documentTitle || 'Tài liệu chưa đặt tên'}
                         </h3>
+
                         <p className="mt-1 text-sm text-slate-500">
-                          {audio.sourceLabel}
+                          {getSourceTypeLabel(audio.sourceLabel)}
                         </p>
 
                         <div className="mt-3 flex flex-wrap gap-2">
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                            Voice {audio.voiceName}
+                            Giọng {audio.voiceName}
                           </span>
+
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                            Speed {audio.speed}
+                            Tốc độ {audio.speed}
                           </span>
+
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
                             {audio.language}
                           </span>
+
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                            {audio.status}
+                            {getAudioStatusLabel(audio.status)}
                           </span>
+
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                            Duration {formatDuration(audio.durationSeconds)}
+                            Thời lượng {formatDuration(audio.durationSeconds)}
                           </span>
                         </div>
 
                         <p className="mt-3 text-xs text-slate-400">
-                          Created: {formatDate(audio.createdAt)}
+                          Tạo lúc: {formatDate(audio.createdAt)}
                         </p>
                       </div>
 
@@ -504,7 +590,7 @@ export default function DocumentAudioPageView({
                           disabled={playingAudioId === audio.id}
                           className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {playingAudioId === audio.id ? 'Đang tải...' : 'Play'}
+                          {playingAudioId === audio.id ? 'Đang tải...' : 'Phát'}
                         </button>
 
                         <button
@@ -521,7 +607,8 @@ export default function DocumentAudioPageView({
                 ))}
 
                 <div className="text-xs text-slate-400">
-                  Showing {audioVersions.length} / {pagination.total} audio version(s)
+                  Đang hiển thị {audioVersions.length} / {pagination.total}{' '}
+                  phiên bản audio
                 </div>
               </div>
             )}

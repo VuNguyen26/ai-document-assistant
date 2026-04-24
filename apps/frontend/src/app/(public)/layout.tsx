@@ -7,18 +7,19 @@ type PublicLayoutProps = {
 const highlights = [
   {
     step: "01",
-    label: "Upload tài liệu",
-    description: "Quản lý PDF, DOCX và TXT trong một workspace rõ ràng.",
+    label: "Tải tài liệu",
+    description: "Quản lý PDF, DOCX và TXT trong một không gian làm việc rõ ràng.",
   },
   {
     step: "02",
-    label: "Pipeline AI",
-    description: "Extract, chunk, embed và chuẩn bị dữ liệu cho semantic search.",
+    label: "Quy trình AI",
+    description:
+      "Trích xuất, chia đoạn, tạo embedding và chuẩn bị dữ liệu cho tìm kiếm ngữ nghĩa.",
   },
   {
     step: "03",
-    label: "Grounded chat",
-    description: "Hỏi đáp theo nội dung tài liệu, có căn cứ và ngữ cảnh.",
+    label: "Chat có căn cứ",
+    description: "Hỏi đáp theo nội dung tài liệu, có căn cứ và ngữ cảnh rõ ràng.",
   },
 ];
 
@@ -139,16 +140,16 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
 
             <div className="mt-10 max-w-3xl">
               <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-indigo-600">
-                Document workspace
+                Không gian tài liệu
               </p>
 
               <h1 className="text-5xl font-semibold leading-[1.06] tracking-[-0.045em] text-slate-950 xl:text-6xl">
-                Turn documents into usable AI knowledge.
+                Biến tài liệu thành tri thức AI có thể sử dụng.
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 xl:text-lg">
-                Upload tài liệu, xử lý pipeline AI, tìm kiếm ngữ nghĩa và hỏi
-                đáp theo nội dung thật của document trong một giao diện hiện đại.
+                Tải tài liệu, xử lý quy trình AI, tìm kiếm ngữ nghĩa và hỏi đáp
+                theo nội dung thật của tài liệu trong một giao diện hiện đại.
               </p>
             </div>
 
@@ -158,10 +159,10 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
             >
               <div className="mb-4 border-b border-slate-200/80 px-2 pb-4">
                 <p className="text-sm font-semibold text-slate-950">
-                  AI processing flow
+                  Luồng xử lý AI
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  From raw files to grounded answers
+                  Từ tệp thô đến câu trả lời có căn cứ
                 </p>
               </div>
 

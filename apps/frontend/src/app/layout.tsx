@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "AI Document Assistant",
-  description: "Upload, process, and chat with documents using AI.",
+  description: "Tải lên, xử lý và chat với tài liệu bằng AI.",
 };
 
 export default function RootLayout({

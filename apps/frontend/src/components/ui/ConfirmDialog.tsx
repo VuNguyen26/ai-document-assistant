@@ -16,8 +16,8 @@ export default function ConfirmDialog({
   open,
   title,
   description,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText = "Xác nhận",
+  cancelText = "Hủy",
   tone = "default",
   loading = false,
   onConfirm,
@@ -61,7 +61,7 @@ export default function ConfirmDialog({
             disabled={loading}
             className={`inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-semibold text-white shadow-sm transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none ${confirmClass}`}
           >
-            {loading ? "Processing..." : confirmText}
+            {loading ? "Đang xử lý..." : confirmText}
           </button>
         </div>
       </div>

@@ -9,7 +9,7 @@ export default function ComingSoonPage({
   eyebrow,
   title,
   description,
-  badge = "Coming soon",
+  badge = "Sắp ra mắt",
 }: ComingSoonPageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
@@ -18,9 +18,11 @@ export default function ComingSoonPage({
           <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500">{eyebrow}</p>
+
               <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
                 {title}
               </h1>
+
               <p className="mt-3 max-w-2xl text-sm text-slate-500">
                 {description}
               </p>
@@ -36,11 +38,14 @@ export default function ComingSoonPage({
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl">
                 ✨
               </div>
+
               <h2 className="text-lg font-semibold text-slate-900">
                 Thiết kế sẵn sàng
               </h2>
+
               <p className="mt-2 text-sm text-slate-500">
-                Màn hình này đã có layout đúng hệ thống và sẵn sàng để nối API.
+                Màn hình này đã có bố cục đúng theo hệ thống và sẵn sàng để nối
+                API.
               </p>
             </div>
 
@@ -48,11 +53,13 @@ export default function ComingSoonPage({
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl">
                 🔌
               </div>
+
               <h2 className="text-lg font-semibold text-slate-900">
                 Dễ mở rộng
               </h2>
+
               <p className="mt-2 text-sm text-slate-500">
-                Có thể nối dữ liệu thật ngay khi backend cho feature này sẵn sàng.
+                Có thể nối dữ liệu thật ngay khi backend hỗ trợ tính năng này.
               </p>
             </div>
 
@@ -60,11 +67,14 @@ export default function ComingSoonPage({
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl">
                 🚀
               </div>
+
               <h2 className="text-lg font-semibold text-slate-900">
                 Đồng bộ giao diện
               </h2>
+
               <p className="mt-2 text-sm text-slate-500">
-                Giữ cùng visual language với Documents và Chat để sản phẩm trông hoàn chỉnh.
+                Giữ cùng phong cách giao diện với Tài liệu và Chat để sản phẩm
+                trông hoàn chỉnh.
               </p>
             </div>
           </div>
@@ -73,11 +83,13 @@ export default function ComingSoonPage({
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl">
               🛠️
             </div>
+
             <h3 className="text-lg font-semibold text-slate-900">
               Module này sẽ được triển khai tiếp
             </h3>
+
             <p className="mt-2 text-sm text-slate-500">
-              Tạm thời đây là màn hình placeholder đẹp để app không còn route rỗng.
+              Tạm thời đây là màn hình chờ đẹp để ứng dụng không còn trang rỗng.
             </p>
           </div>
         </div>
