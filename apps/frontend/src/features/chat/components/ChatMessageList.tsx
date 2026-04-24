@@ -1,7 +1,7 @@
 "use client";
 
-import toast from "react-hot-toast";
 import type { RefObject } from "react";
+import toast from "react-hot-toast";
 import type { ChatMessage } from "../types/chat.types";
 import ChatCitations from "./ChatCitations";
 import MarkdownMessage from "./MarkdownMessage";
@@ -19,8 +19,23 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Không thể copy vào clipboard.");
+    toast.error("Cannot copy to clipboard.");
   }
+}
+
+function formatMessageTime(value?: string | null) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 export default function ChatMessageList({
@@ -32,32 +47,62 @@ export default function ChatMessageList({
 }: ChatMessageListProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-slate-50 px-6">
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-500 shadow-sm">
-          Đang tải hội thoại...
-        </div>
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 sm:px-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className={`flex ${index % 2 === 0 ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`h-24 animate-pulse rounded-3xl ${
+                index % 2 === 0
+                  ? "w-[70%] bg-indigo-100"
+                  : "w-[82%] bg-white"
+              }`}
+            />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-slate-50 px-6 py-10">
-        <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-2xl">
-            💬
-          </div>
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-4 py-10 sm:px-6">
+        <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-indigo-500" />
 
-          <h3 className="text-xl font-semibold text-slate-900">
-            Bắt đầu cuộc trò chuyện mới
+          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
+            Start a new conversation
           </h3>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Hãy đặt câu hỏi về nội dung tài liệu. Hệ thống sẽ trả lời dựa trên
-            dữ liệu đã được xử lý từ document hiện tại.
+
+          <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
+            Ask a question about this document. The answer will be generated
+            from processed document content when relevant chunks are found.
           </p>
 
+          <div className="mt-6 grid gap-3 text-left sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-900">
+                Ask for a summary
+              </p>
+              <p className="mt-1 text-sm leading-5 text-slate-500">
+                “Summarize the key points.”
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-900">
+                Ask for details
+              </p>
+              <p className="mt-1 text-sm leading-5 text-slate-500">
+                “What does it say about the main policy?”
+              </p>
+            </div>
+          </div>
+
           {error ? (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="mt-6 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
               {error}
             </div>
           ) : null}
@@ -67,82 +112,102 @@ export default function ChatMessageList({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 px-5 py-6">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+    <div className="flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-6">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
         {messages.map((message) => {
           const isUser = message.role === "USER";
+          const time = formatMessageTime(message.createdAt);
 
           return (
-            <div
+            <article
               key={message.id}
               className={`flex ${isUser ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-3xl px-4 py-3 shadow-sm ${
+                className={`max-w-[88%] rounded-[1.5rem] px-5 py-4 shadow-sm ${
                   isUser
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-200 bg-white text-slate-800"
+                    ? "bg-indigo-600 text-white"
+                    : "border border-slate-200 bg-white text-slate-900"
                 }`}
               >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] opacity-60">
-                    {isUser ? "User" : "Assistant"}
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        isUser ? "bg-indigo-200" : "bg-emerald-500"
+                      }`}
+                    />
+
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-[0.16em] ${
+                        isUser ? "text-indigo-100" : "text-slate-400"
+                      }`}
+                    >
+                      {isUser ? "You" : "Assistant"}
+                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void copyToClipboard(
-                        message.content,
+                  <div className="flex items-center gap-3">
+                    {time ? (
+                      <span
+                        className={`text-xs ${
+                          isUser ? "text-indigo-100" : "text-slate-400"
+                        }`}
+                      >
+                        {time}
+                      </span>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void copyToClipboard(
+                          message.content,
+                          isUser ? "Question copied." : "Answer copied.",
+                        )
+                      }
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
                         isUser
-                          ? "Đã copy câu hỏi."
-                          : "Đã copy câu trả lời.",
-                      )
-                    }
-                    className={`rounded-full px-3 py-1 text-[11px] font-medium transition ${
-                      isUser
-                        ? "border border-white/20 bg-white/10 text-white hover:bg-white/15"
-                        : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    Copy
-                  </button>
+                          ? "bg-white/10 text-white hover:bg-white/15"
+                          : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      Copy
+                    </button>
+                  </div>
                 </div>
 
                 {isUser ? (
-                  <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                  <p className="whitespace-pre-wrap text-sm leading-7">
                     {message.content}
                   </p>
                 ) : (
-                  <>
+                  <div className="space-y-4">
                     <MarkdownMessage content={message.content} />
+
                     {message.citations?.length ? (
                       <ChatCitations citations={message.citations} />
                     ) : null}
-                  </>
+                  </div>
                 )}
               </div>
-            </div>
+            </article>
           );
         })}
 
         {isStreaming ? (
-          <div className="flex justify-start">
-            <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Assistant
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+          <article className="flex justify-start">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+                <span className="font-medium">Assistant is writing...</span>
               </div>
             </div>
-          </div>
+          </article>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
             {error}
           </div>
         ) : null}

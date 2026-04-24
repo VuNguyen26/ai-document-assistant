@@ -10,6 +10,56 @@ type ChatDocumentPageViewProps = {
   documentId: string;
 };
 
+function getStatusStyle(status: string) {
+  switch (status) {
+    case "READY":
+      return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    case "FAILED":
+      return "border-rose-100 bg-rose-50 text-rose-700";
+    case "UPLOADED":
+      return "border-amber-100 bg-amber-50 text-amber-700";
+    case "EXTRACTED":
+      return "border-cyan-100 bg-cyan-50 text-cyan-700";
+    case "CHUNKED":
+      return "border-indigo-100 bg-indigo-50 text-indigo-700";
+    case "PROCESSING":
+    case "VALIDATING":
+    case "EXTRACTING":
+    case "CHUNKING":
+    case "EMBEDDING":
+      return "border-blue-100 bg-blue-50 text-blue-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-600";
+  }
+}
+
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Uploaded";
+    case "PROCESSING":
+      return "Processing";
+    case "VALIDATING":
+      return "Validating";
+    case "EXTRACTING":
+      return "Extracting";
+    case "EXTRACTED":
+      return "Extracted";
+    case "CHUNKING":
+      return "Chunking";
+    case "CHUNKED":
+      return "Chunked";
+    case "EMBEDDING":
+      return "Embedding";
+    case "READY":
+      return "Ready";
+    case "FAILED":
+      return "Failed";
+    default:
+      return status;
+  }
+}
+
 export default function ChatDocumentPageView({
   documentId,
 }: ChatDocumentPageViewProps) {
@@ -22,6 +72,7 @@ export default function ChatDocumentPageView({
       try {
         setLoading(true);
         setError("");
+
         const data = await getDocumentById(documentId);
         setDocument(data);
       } catch (err) {
@@ -40,112 +91,134 @@ export default function ChatDocumentPageView({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="mb-6 h-28 animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
-          <div className="h-[calc(100vh-260px)] animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
+      <div className="space-y-6">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="h-5 w-40 animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-5 h-9 w-72 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="mt-4 h-4 w-full max-w-xl animate-pulse rounded-full bg-slate-100" />
         </div>
+
+        <div className="h-[620px] animate-pulse rounded-[2rem] border border-slate-200 bg-white shadow-sm" />
       </div>
     );
   }
 
   if (error || !document) {
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-10">
-        <div className="mx-auto max-w-3xl rounded-3xl border border-rose-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Không thể mở chat tài liệu
-          </h1>
-          <p className="mt-3 text-sm text-slate-500">
-            {error || "Tài liệu không tồn tại hoặc anh không có quyền truy cập."}
-          </p>
+      <div className="rounded-[2rem] border border-rose-100 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-rose-500" />
 
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <Link
-              href="/documents"
-              className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              Quay lại Documents
-            </Link>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          Unable to open document chat
+        </h1>
 
-            <Link
-              href={`/documents/${documentId}`}
-              className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Về Document Detail
-            </Link>
-          </div>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
+          {error || "This document does not exist or you do not have access."}
+        </p>
+
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href="/documents"
+            className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+          >
+            Back to documents
+          </Link>
+
+          <Link
+            href={`/documents/${documentId}`}
+            className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
+          >
+            Open detail
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <Link
-                  href={`/documents/${document.id}`}
-                  className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-white"
-                >
-                  ← Quay lại chi tiết tài liệu
-                </Link>
+    <div className="space-y-6">
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-6 p-6 sm:p-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/documents/${document.id}`}
+                className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+              >
+                ← Back to detail
+              </Link>
 
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
-                  Document Chat
-                </span>
-              </div>
+              <span className="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                Document chat
+              </span>
+            </div>
 
-              <p className="text-sm font-medium text-slate-500">
-                AI Document Assistant
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                Chat với tài liệu
-              </h1>
-              <p className="mt-2 text-base font-semibold text-slate-800">
+            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              Chat with document
+            </h1>
+
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+              Ask questions based on the uploaded file. Answers should stay
+              grounded in document content and include citations when available.
+            </p>
+
+            <div className="mt-5 min-w-0 rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+              <p className="truncate text-base font-semibold text-slate-950">
                 {document.title}
               </p>
-              <p className="mt-1 break-all text-sm text-slate-500">
+
+              <p className="mt-1 truncate text-sm text-slate-500">
                 {document.originalFilename}
               </p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+          <aside className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+              Document info
+            </p>
+
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                <span className="text-sm font-medium text-slate-500">
                   Status
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {document.status}
-                </p>
+                </span>
+
+                <span
+                  className={`inline-flex max-w-[130px] items-center justify-center truncate rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none ${getStatusStyle(
+                    document.status,
+                  )}`}
+                  title={getStatusLabel(document.status)}
+                >
+                  {getStatusLabel(document.status)}
+                </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                <span className="text-sm font-medium text-slate-500">
                   Language
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {document.sourceLanguage || "Chưa xác định"}
-                </p>
+                </span>
+
+                <span className="truncate text-sm font-semibold text-slate-900">
+                  {document.sourceLanguage || "Unknown"}
+                </span>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
+              <div className="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-200">
+                <span className="text-sm font-medium text-slate-500">
                   Pages
-                </p>
-                <p className="mt-1 text-sm font-semibold text-slate-900">
+                </span>
+
+                <span className="text-sm font-semibold text-slate-900">
                   {document.pageCount ?? "—"}
-                </p>
+                </span>
               </div>
             </div>
-          </div>
+          </aside>
         </div>
+      </section>
 
-        <ChatBox documentId={documentId} />
-      </div>
+      <ChatBox documentId={documentId} />
     </div>
   );
 }

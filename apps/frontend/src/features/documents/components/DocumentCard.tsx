@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import DocumentStatusBadge from "./DocumentStatusBadge";
 import type { DocumentItem } from "../types/documents.types";
+import DocumentStatusBadge from "./DocumentStatusBadge";
 
 type DocumentCardProps = {
   document: DocumentItem;
@@ -22,100 +22,117 @@ function formatBytes(value: string) {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-function formatDate(value: string) {
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return value;
 
   return new Intl.DateTimeFormat("vi-VN", {
-    dateStyle: "medium",
+    dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function getShortMimeType(value: string) {
+  if (value.includes("pdf")) return "PDF";
+  if (value.includes("wordprocessingml")) return "DOCX";
+  if (value.includes("text")) return "TXT";
+
+  return value;
 }
 
 function getPipelineAction(status: string) {
   switch (status) {
     case "UPLOADED":
       return {
-        label: "Bước tiếp theo: Extract",
+        label: "Ready for extraction",
         tone: "amber" as const,
-        cta: "Tiếp tục xử lý",
+        cta: "Continue",
       };
     case "EXTRACTED":
       return {
-        label: "Bước tiếp theo: Chunk",
-        tone: "sky" as const,
-        cta: "Tiếp tục xử lý",
+        label: "Ready for chunking",
+        tone: "cyan" as const,
+        cta: "Continue",
       };
     case "CHUNKED":
       return {
-        label: "Bước tiếp theo: Embed",
+        label: "Ready for embeddings",
         tone: "indigo" as const,
-        cta: "Tiếp tục xử lý",
+        cta: "Continue",
       };
     case "PROCESSING":
       return {
-        label: "Tài liệu đang được xử lý",
+        label: "Processing is running",
         tone: "blue" as const,
-        cta: "Đang xử lý",
+        cta: "Processing",
       };
     case "FAILED":
       return {
-        label: "Pipeline lỗi, nên reprocess",
+        label: "Needs review",
         tone: "rose" as const,
-        cta: "Mở chi tiết",
+        cta: "Open detail",
       };
     case "READY":
       return {
-        label: "Đã sẵn sàng để chat",
+        label: "Ready for chat",
         tone: "emerald" as const,
-        cta: "Chat ngay",
+        cta: "Start chat",
       };
     default:
       return {
-        label: "Mở chi tiết tài liệu",
+        label: "Open document detail",
         tone: "slate" as const,
-        cta: "Xem chi tiết",
+        cta: "View detail",
       };
   }
 }
 
 function getActionBoxClass(
-  tone: "amber" | "sky" | "indigo" | "blue" | "rose" | "emerald" | "slate",
+  tone:
+    | "amber"
+    | "cyan"
+    | "indigo"
+    | "blue"
+    | "rose"
+    | "emerald"
+    | "slate",
 ) {
   switch (tone) {
     case "amber":
-      return "border-amber-200 bg-amber-50 text-amber-800";
-    case "sky":
-      return "border-sky-200 bg-sky-50 text-sky-800";
+      return "border-amber-100 bg-amber-50 text-amber-700";
+    case "cyan":
+      return "border-cyan-100 bg-cyan-50 text-cyan-700";
     case "indigo":
-      return "border-indigo-200 bg-indigo-50 text-indigo-800";
+      return "border-indigo-100 bg-indigo-50 text-indigo-700";
     case "blue":
-      return "border-blue-200 bg-blue-50 text-blue-800";
+      return "border-blue-100 bg-blue-50 text-blue-700";
     case "rose":
-      return "border-rose-200 bg-rose-50 text-rose-800";
+      return "border-rose-100 bg-rose-50 text-rose-700";
     case "emerald":
-      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+      return "border-emerald-100 bg-emerald-50 text-emerald-700";
     default:
-      return "border-slate-200 bg-slate-50 text-slate-700";
+      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }
 
 function getJobStatusClass(status: string) {
   switch (status) {
     case "SUCCEEDED":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "FAILED":
-      return "bg-rose-50 text-rose-700 border-rose-200";
+      return "border-rose-100 bg-rose-50 text-rose-700";
     case "RUNNING":
     case "RETRYING":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "border-amber-100 bg-amber-50 text-amber-700";
     case "QUEUED":
-      return "bg-sky-50 text-sky-700 border-sky-200";
+      return "border-cyan-100 bg-cyan-50 text-cyan-700";
     case "CANCELLED":
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "border-slate-200 bg-slate-100 text-slate-600";
     default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "border-slate-200 bg-slate-100 text-slate-600";
   }
 }
 
@@ -138,10 +155,6 @@ function getJobStatusLabel(status: string) {
   }
 }
 
-function getJobTypeLabel(type: string) {
-  return type === "REPROCESS" ? "Reprocess" : "Process";
-}
-
 export default function DocumentCard({
   document,
   onDelete,
@@ -152,64 +165,73 @@ export default function DocumentCard({
   const action = getPipelineAction(document.status);
 
   return (
-    <article className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <article className="flex h-full flex-col rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
+            Document
+          </p>
+
+          <h3 className="mt-2 truncate text-xl font-semibold tracking-tight text-slate-950">
             {document.title}
           </h3>
+
           <p className="mt-1 truncate text-sm text-slate-500">
             {document.originalFilename}
           </p>
         </div>
 
-        <DocumentStatusBadge status={document.status} />
+        <div className="shrink-0">
+          <DocumentStatusBadge status={document.status} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-4 text-sm">
+      <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Loại</p>
-          <p className="mt-1 break-words font-medium text-slate-700">
-            {document.mimeType}
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Type
+          </p>
+          <p className="mt-1 text-sm font-semibold text-slate-800">
+            {getShortMimeType(document.mimeType)}
           </p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Kích thước
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Size
           </p>
-          <p className="mt-1 font-medium text-slate-700">
+          <p className="mt-1 text-sm font-semibold text-slate-800">
             {formatBytes(document.fileSize)}
           </p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Ngôn ngữ
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Language
           </p>
-          <p className="mt-1 font-medium text-slate-700">
-            {document.sourceLanguage || "Chưa xác định"}
+          <p className="mt-1 truncate text-sm font-semibold text-slate-800">
+            {document.sourceLanguage || "Unknown"}
           </p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Tạo lúc
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Created
           </p>
-          <p className="mt-1 font-medium text-slate-700">
+          <p className="mt-1 truncate text-sm font-semibold text-slate-800">
             {formatDate(document.createdAt)}
           </p>
         </div>
       </div>
 
       {document.errorMessage ? (
-        <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
           {document.errorMessage}
         </div>
       ) : null}
 
       <div
-        className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${getActionBoxClass(
+        className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold ${getActionBoxClass(
           action.tone,
         )}`}
       >
@@ -217,85 +239,77 @@ export default function DocumentCard({
       </div>
 
       {document.latestJob ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Latest job
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-              {getJobTypeLabel(document.latestJob.type)}
-            </span>
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Latest job
+            </p>
 
             <span
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${getJobStatusClass(
+              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getJobStatusClass(
                 document.latestJob.status,
               )}`}
             >
               {getJobStatusLabel(document.latestJob.status)}
             </span>
+          </div>
 
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-              Attempts {document.latestJob.attempts}/
-              {document.latestJob.maxAttempts}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+              {document.latestJob.type === "REPROCESS" ? "Reprocess" : "Process"}
+            </span>
+
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+              {document.latestJob.attempts}/{document.latestJob.maxAttempts} attempts
             </span>
           </div>
 
-          <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
-            <p>Created: {formatDate(document.latestJob.createdAt)}</p>
-            <p>Updated: {formatDate(document.latestJob.updatedAt)}</p>
-            <p>Next run: {formatDate(document.latestJob.nextRunAt)}</p>
-            <p>
-              Completed:{" "}
-              {document.latestJob.completedAt
-                ? formatDate(document.latestJob.completedAt)
-                : "—"}
-            </p>
-          </div>
-
-          {document.latestJob.errorMessage ? (
-            <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-              {document.latestJob.errorMessage}
-            </div>
-          ) : null}
+          <p className="mt-3 text-xs text-slate-500">
+            Updated{" "}
+            <span className="font-medium text-slate-700">
+              {formatDate(document.latestJob.updatedAt)}
+            </span>
+          </p>
         </div>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => router.push(`/documents/${document.id}`)}
-          className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          Xem chi tiết
-        </button>
-
-        {isReady ? (
-          <button
-            type="button"
-            onClick={() => router.push(`/documents/${document.id}/chat`)}
-            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            {action.cta}
-          </button>
-        ) : (
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => router.push(`/documents/${document.id}`)}
-            disabled={isProcessing}
-            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
           >
-            {action.cta}
+            Detail
           </button>
-        )}
 
-        <button
-          type="button"
-          onClick={() => onDelete(document.id)}
-          className="rounded-2xl border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-        >
-          Xóa
-        </button>
+          {isReady ? (
+            <button
+              type="button"
+              onClick={() => router.push(`/documents/${document.id}/chat`)}
+              className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
+            >
+              {action.cta}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.push(`/documents/${document.id}`)}
+              disabled={isProcessing}
+              className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+            >
+              {action.cta}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => onDelete(document.id)}
+            className="col-span-2 rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </article>
   );

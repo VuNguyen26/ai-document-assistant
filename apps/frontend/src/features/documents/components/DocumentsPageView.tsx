@@ -16,6 +16,45 @@ import UploadDocument from "./UploadDocument";
 
 const PAGE_SIZE = 12;
 
+const SUMMARY_CARDS = [
+  {
+    key: "total",
+    label: "Total",
+    description: "All files",
+    badge: "DOC",
+    valueClassName: "text-slate-950",
+    badgeClassName: "bg-indigo-50 text-indigo-700 ring-indigo-100",
+    dotClassName: "bg-indigo-500",
+  },
+  {
+    key: "ready",
+    label: "Ready",
+    description: "Available for chat",
+    badge: "RDY",
+    valueClassName: "text-emerald-600",
+    badgeClassName: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    dotClassName: "bg-emerald-500",
+  },
+  {
+    key: "incomplete",
+    label: "Incomplete",
+    description: "Still processing",
+    badge: "WIP",
+    valueClassName: "text-amber-600",
+    badgeClassName: "bg-amber-50 text-amber-700 ring-amber-100",
+    dotClassName: "bg-amber-500",
+  },
+  {
+    key: "failed",
+    label: "Failed",
+    description: "Needs review",
+    badge: "ERR",
+    valueClassName: "text-rose-600",
+    badgeClassName: "bg-rose-50 text-rose-700 ring-rose-100",
+    dotClassName: "bg-rose-500",
+  },
+] as const;
+
 export default function DocumentsPageView() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [summary, setSummary] = useState<DocumentsListResponse["summary"]>({
@@ -24,14 +63,13 @@ export default function DocumentsPageView() {
     failed: 0,
     incomplete: 0,
   });
-  const [pagination, setPagination] = useState<DocumentsListResponse["pagination"]>(
-    {
+  const [pagination, setPagination] =
+    useState<DocumentsListResponse["pagination"]>({
       page: 1,
       limit: PAGE_SIZE,
       total: 0,
       totalPages: 1,
-    },
-  );
+    });
 
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
@@ -88,8 +126,7 @@ export default function DocumentsPageView() {
       toast.success("Đã xóa tài liệu.");
       setDeleteTarget(null);
 
-      const targetPage =
-        documents.length === 1 && page > 1 ? page - 1 : page;
+      const targetPage = documents.length === 1 && page > 1 ? page - 1 : page;
 
       setPage(targetPage);
       await loadDocuments(
@@ -144,71 +181,77 @@ export default function DocumentsPageView() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="mb-4">
+      <div className="space-y-8">
+        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-8 p-6 sm:p-8 xl:grid-cols-[1.05fr_0.95fr] xl:p-10">
+            <div className="flex flex-col justify-between">
+              <div>
                 <Link
                   href="/dashboard"
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Về Dashboard
+                  ← Back to dashboard
                 </Link>
-              </div>
 
-              <p className="text-sm font-medium text-slate-500">
-                AI Document Assistant
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                Documents Workspace
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                Quản lý tài liệu, theo dõi trạng thái xử lý và chuẩn bị dữ liệu
-                cho chat grounded bằng AI.
-              </p>
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Document library
+                </div>
+
+                <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                  Manage uploaded documents
+                </h1>
+
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                  Upload files, review processing status, and prepare documents
+                  for search, chat, summaries and translations.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Total
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {summary.total}
-                </p>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {SUMMARY_CARDS.map((item) => {
+                const value = summary[item.key];
 
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Ready
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-emerald-600">
-                  {summary.ready}
-                </p>
-              </div>
+                return (
+                  <div
+                    key={item.key}
+                    className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition hover:border-indigo-100 hover:bg-white hover:shadow-sm"
+                  >
+                    <div className="mb-5 flex items-center justify-between">
+                      <div
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl text-xs font-semibold tracking-wide ring-1 ${item.badgeClassName}`}
+                      >
+                        {item.badge}
+                      </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Incomplete
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-amber-600">
-                  {summary.incomplete}
-                </p>
-              </div>
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${item.dotClassName}`}
+                      />
+                    </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Failed
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-rose-600">
-                  {summary.failed}
-                </p>
-              </div>
+                    <p
+                      className={`text-3xl font-semibold tracking-tight ${item.valueClassName}`}
+                    >
+                      {value}
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-semibold text-slate-900">
+                      {item.label}
+                    </h3>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        </section>
 
-          <div className="mb-6 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-6">
             <DocumentsToolbar
               search={searchInput}
               status={status}
@@ -223,96 +266,197 @@ export default function DocumentsPageView() {
               onReset={handleResetFilters}
             />
 
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                    Library
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                    Document list
+                  </h2>
+                </div>
+
+                <p className="text-sm text-slate-500">
+                  Page{" "}
+                  <span className="font-semibold text-slate-800">
+                    {pagination.page}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-slate-800">
+                    {pagination.totalPages}
+                  </span>
+                </p>
+              </div>
+
+              {loading ? (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-64 animate-pulse rounded-3xl border border-slate-200 bg-slate-50"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {documents.length === 0 ? (
+                    <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
+                      <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
+
+                      <p className="text-sm font-semibold text-slate-800">
+                        Không có tài liệu nào phù hợp
+                      </p>
+
+                      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                        {hasFilters
+                          ? "Hãy thử đổi từ khóa, trạng thái hoặc kiểu sắp xếp."
+                          : "Anh có thể upload tài liệu đầu tiên để bắt đầu."}
+                      </p>
+
+                      {hasFilters ? (
+                        <button
+                          type="button"
+                          onClick={handleResetFilters}
+                          className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                        >
+                          Reset filters
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <>
+                      <DocumentsGrid
+                        documents={documents}
+                        onDelete={(documentId) => {
+                          const target =
+                            documents.find((item) => item.id === documentId) ||
+                            null;
+                          setDeleteTarget(target);
+                        }}
+                      />
+
+                      <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                        <p className="text-sm text-slate-500">
+                          Showing{" "}
+                          <span className="font-semibold text-slate-800">
+                            {documents.length}
+                          </span>{" "}
+                          of{" "}
+                          <span className="font-semibold text-slate-800">
+                            {pagination.total}
+                          </span>{" "}
+                          documents
+                        </p>
+
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPage((prev) => Math.max(1, prev - 1))
+                            }
+                            disabled={pagination.page <= 1}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPage((prev) =>
+                                Math.min(pagination.totalPages, prev + 1),
+                              )
+                            }
+                            disabled={pagination.page >= pagination.totalPages}
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <aside className="space-y-6">
             <UploadDocument
               onUploaded={async () => {
                 setPage(1);
-                await loadDocuments(1, debouncedSearch, status, sortBy, sortOrder);
+                await loadDocuments(
+                  1,
+                  debouncedSearch,
+                  status,
+                  sortBy,
+                  sortOrder,
+                );
               }}
             />
-          </div>
 
-          {loading ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-64 animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm"
-                />
-              ))}
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                Status guide
+              </p>
+
+              <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                Processing states
+              </h2>
+
+              <div className="mt-5 space-y-4">
+                <div className="flex gap-3">
+                  <span className="mt-2 h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Ready
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      The document can be used for search and chat.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="mt-2 h-2.5 w-2.5 rounded-full bg-amber-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Incomplete
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Extraction, chunking or embedding is still pending.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="mt-2 h-2.5 w-2.5 rounded-full bg-rose-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Failed
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      The file needs to be reviewed or uploaded again.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          ) : (
-            <>
-              <DocumentsGrid
-                documents={documents}
-                onDelete={(documentId) => {
-                  const target =
-                    documents.find((item) => item.id === documentId) || null;
-                  setDeleteTarget(target);
-                }}
-              />
-
-              {documents.length === 0 ? (
-                <div className="mt-8 rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-xl">
-                    📂
-                  </div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Không có tài liệu nào phù hợp
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {hasFilters
-                      ? "Hãy thử đổi từ khóa, trạng thái hoặc kiểu sắp xếp."
-                      : "Anh có thể upload tài liệu đầu tiên để bắt đầu."}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-8 flex flex-col items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row">
-                  <p className="text-sm text-slate-500">
-                    Trang{" "}
-                    <span className="font-semibold text-slate-900">
-                      {pagination.page}
-                    </span>{" "}
-                    / {pagination.totalPages}
-                  </p>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                      disabled={pagination.page <= 1}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Trang trước
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setPage((prev) =>
-                          Math.min(pagination.totalPages, prev + 1),
-                        )
-                      }
-                      disabled={pagination.page >= pagination.totalPages}
-                      className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Trang sau
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+          </aside>
+        </section>
       </div>
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Xoá tài liệu"
-        description={`Bạn có chắc muốn xoá tài liệu "${
-          deleteTarget?.title || ""
-        }" không? Hành động này sẽ ẩn tài liệu khỏi workspace hiện tại.`}
-        confirmText="Xoá tài liệu"
-        cancelText="Huỷ"
+        title="Xóa tài liệu?"
+        description={
+          deleteTarget
+            ? `Tài liệu "${deleteTarget.title}" sẽ bị xóa khỏi workspace.`
+            : "Tài liệu này sẽ bị xóa khỏi workspace."
+        }
+        confirmText={isDeleting ? "Đang xóa..." : "Xóa tài liệu"}
+        cancelText="Hủy"
         tone="danger"
         loading={isDeleting}
         onConfirm={() => void confirmDelete()}

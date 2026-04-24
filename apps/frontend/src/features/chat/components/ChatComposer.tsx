@@ -17,33 +17,44 @@ export default function ChatComposer({
   onInputChange,
   onSend,
 }: ChatComposerProps) {
-  return (
-    <div className="border-t border-slate-200 bg-white p-4">
-      <div className="mx-auto flex w-full max-w-4xl items-end gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-3">
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => onInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSend();
-            }
-          }}
-          placeholder="Hỏi bất kỳ điều gì về tài liệu này..."
-          rows={1}
-          disabled={isStreaming}
-          className="max-h-48 min-h-[48px] flex-1 resize-none bg-transparent px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
-        />
+  const canSend = input.trim().length > 0 && !isStreaming;
 
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={!input.trim() || isStreaming}
-          className="inline-flex h-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isStreaming ? "Đang gửi..." : "Gửi"}
-        </button>
+  return (
+    <div className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-3 shadow-sm transition focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-50">
+          <div className="flex items-end gap-3">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(event) => onInputChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  onSend();
+                }
+              }}
+              placeholder="Ask a question about this document..."
+              rows={1}
+              disabled={isStreaming}
+              className="max-h-44 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+            />
+
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={!canSend}
+              className="inline-flex h-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+            >
+              {isStreaming ? "Sending" : "Send"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2 flex flex-col justify-between gap-1 px-1 text-xs text-slate-400 sm:flex-row sm:items-center">
+          <span>Press Enter to send, Shift + Enter for a new line.</span>
+          <span>{input.trim().length} characters</span>
+        </div>
       </div>
     </div>
   );

@@ -346,9 +346,9 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
   if (isCheckingAuth) {
     return (
-      <div className="flex h-[calc(100vh-120px)] items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          Đang kiểm tra đăng nhập...
+      <div className="flex h-[620px] items-center justify-center rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+          Checking your session...
         </div>
       </div>
     );
@@ -356,53 +356,55 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-120px)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <ChatSidebar
-          sessions={sessions}
-          activeSessionId={activeSessionId}
-          isLoading={isLoadingSessions}
-          renamingSessionId={renamingSessionId}
-          renameValue={renameValue}
-          onRenameValueChange={setRenameValue}
-          onNewChat={handleNewChat}
-          onSelectSession={(sessionId) => void loadSessionMessages(sessionId)}
-          onStartRename={(session) => {
-            setRenamingSessionId(session.id);
-            setRenameValue(session.title || "");
-          }}
-          onCancelRename={() => {
-            setRenamingSessionId(null);
-            setRenameValue("");
-          }}
-          onConfirmRename={(sessionId) => void handleRename(sessionId)}
-          onDeleteSession={(sessionId) => handleDelete(sessionId)}
-        />
-
-        <section className="flex min-w-0 flex-1 flex-col">
-          <ChatHeader
-            title={activeSession?.title || "Document Chat"}
-            documentId={documentId}
-            onLogout={handleLogout}
-            onOpenSessions={() => setMobileSessionsOpen(true)}
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+        <div className="flex h-[calc(100vh-180px)] min-h-[620px] max-h-[820px]">
+          <ChatSidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            isLoading={isLoadingSessions}
+            renamingSessionId={renamingSessionId}
+            renameValue={renameValue}
+            onRenameValueChange={setRenameValue}
+            onNewChat={handleNewChat}
+            onSelectSession={(sessionId) => void loadSessionMessages(sessionId)}
+            onStartRename={(session) => {
+              setRenamingSessionId(session.id);
+              setRenameValue(session.title || "");
+            }}
+            onCancelRename={() => {
+              setRenamingSessionId(null);
+              setRenameValue("");
+            }}
+            onConfirmRename={(sessionId) => void handleRename(sessionId)}
+            onDeleteSession={(sessionId) => handleDelete(sessionId)}
           />
 
-          <ChatMessageList
-            messages={messages}
-            isLoading={isLoadingMessages}
-            isStreaming={isStreaming}
-            error={error}
-            messagesEndRef={messagesEndRef}
-          />
+          <div className="flex min-w-0 flex-1 flex-col bg-slate-50/60">
+            <ChatHeader
+              title={activeSession?.title || "Document Chat"}
+              documentId={documentId}
+              onLogout={handleLogout}
+              onOpenSessions={() => setMobileSessionsOpen(true)}
+            />
 
-          <ChatComposer
-            input={input}
-            isStreaming={isStreaming}
-            textareaRef={textareaRef}
-            onInputChange={setInput}
-            onSend={() => void handleSend()}
-          />
-        </section>
-      </div>
+            <ChatMessageList
+              messages={messages}
+              isLoading={isLoadingMessages}
+              isStreaming={isStreaming}
+              error={error}
+              messagesEndRef={messagesEndRef}
+            />
+
+            <ChatComposer
+              input={input}
+              isStreaming={isStreaming}
+              textareaRef={textareaRef}
+              onInputChange={setInput}
+              onSend={() => void handleSend()}
+            />
+          </div>
+        </div>
+      </section>
 
       <MobileChatSessionsSheet
         open={mobileSessionsOpen}
@@ -440,4 +442,4 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       />
     </>
   );
-}
+} 

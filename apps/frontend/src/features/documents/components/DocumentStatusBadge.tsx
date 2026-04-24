@@ -5,42 +5,52 @@ type DocumentStatusBadgeProps = {
 function getStatusStyle(status: string) {
   switch (status) {
     case "READY":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "FAILED":
-      return "bg-rose-50 text-rose-700 border-rose-200";
+      return "border-rose-100 bg-rose-50 text-rose-700";
     case "UPLOADED":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "border-amber-100 bg-amber-50 text-amber-700";
     case "EXTRACTED":
-      return "bg-sky-50 text-sky-700 border-sky-200";
+      return "border-cyan-100 bg-cyan-50 text-cyan-700";
     case "CHUNKED":
-      return "bg-indigo-50 text-indigo-700 border-indigo-200";
+      return "border-indigo-100 bg-indigo-50 text-indigo-700";
     case "PROCESSING":
     case "VALIDATING":
     case "EXTRACTING":
     case "CHUNKING":
     case "EMBEDDING":
-      return "bg-blue-50 text-blue-700 border-blue-200";
+      return "border-blue-100 bg-blue-50 text-blue-700";
+    case "DELETED":
+      return "border-slate-200 bg-slate-100 text-slate-500";
     default:
-      return "bg-slate-50 text-slate-700 border-slate-200";
+      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }
 
 function getStatusLabel(status: string) {
   switch (status) {
     case "UPLOADED":
-      return "Đã upload";
+      return "Uploaded";
     case "PROCESSING":
-      return "Đang xử lý";
+      return "Processing";
+    case "VALIDATING":
+      return "Validating";
+    case "EXTRACTING":
+      return "Extracting";
     case "EXTRACTED":
-      return "Đã extract";
+      return "Extracted";
+    case "CHUNKING":
+      return "Chunking";
     case "CHUNKED":
-      return "Đã chunk";
+      return "Chunked";
+    case "EMBEDDING":
+      return "Embedding";
     case "READY":
-      return "Sẵn sàng";
+      return "Ready";
     case "FAILED":
-      return "Thất bại";
+      return "Failed";
     case "DELETED":
-      return "Đã xóa";
+      return "Deleted";
     default:
       return status;
   }
@@ -49,9 +59,10 @@ function getStatusLabel(status: string) {
 export function DocumentStatusBadge({ status }: DocumentStatusBadgeProps) {
   return (
     <span
-      className={`inline-flex shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${getStatusStyle(
+      className={`inline-flex max-w-[120px] shrink-0 items-center justify-center truncate rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-none ${getStatusStyle(
         status,
       )}`}
+      title={getStatusLabel(status)}
     >
       {getStatusLabel(status)}
     </span>

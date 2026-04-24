@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { clearAuthSession, getAuthUser } from "@/lib/auth/token-storage";
 
 type DashboardLayoutProps = {
@@ -10,29 +10,92 @@ type DashboardLayoutProps = {
 };
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-  { href: "/documents", label: "Documents", icon: "📄" },
-  { href: "/workspaces", label: "Workspaces", icon: "🗂️" },
-  { href: "/summaries", label: "Summaries", icon: "📝" },
-  { href: "/translations", label: "Translations", icon: "🌐" },
-  { href: "/profile", label: "Profile", icon: "👤" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    description: "Overview",
+    icon: "🏠",
+  },
+  {
+    href: "/documents",
+    label: "Documents",
+    description: "Upload & manage files",
+    icon: "📄",
+  },
+  {
+    href: "/workspaces",
+    label: "Workspaces",
+    description: "Group documents",
+    icon: "🗂️",
+  },
+  {
+    href: "/summaries",
+    label: "Summaries",
+    description: "AI document summary",
+    icon: "📝",
+  },
+  {
+    href: "/translations",
+    label: "Translations",
+    description: "Translate content",
+    icon: "🌐",
+  },
+  {
+    href: "/profile",
+    label: "Profile",
+    description: "Account information",
+    icon: "👤",
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    description: "System preferences",
+    icon: "⚙️",
+  },
 ];
+
+function getPageTitle(pathname: string) {
+  const activeItem = NAV_ITEMS.find((item) => {
+    if (item.href === "/dashboard") {
+      return pathname === item.href;
+    }
+
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  });
+
+  return activeItem?.label ?? "Dashboard";
+}
+
+function getPageDescription(pathname: string) {
+  const activeItem = NAV_ITEMS.find((item) => {
+    if (item.href === "/dashboard") {
+      return pathname === item.href;
+    }
+
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  });
+
+  return activeItem?.description ?? "Manage your AI document workflow";
+}
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const user = useMemo(() => getAuthUser(), []);
+  const [user, setUser] = useState<ReturnType<typeof getAuthUser> | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const authUser = getAuthUser();
 
-    if (!getAuthUser()) {
+    if (!authUser) {
       router.replace("/login");
+      return;
     }
+
+    setUser(authUser);
+    setMounted(true);
   }, [router]);
 
   useEffect(() => {
@@ -46,8 +109,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
-        Đang tải...
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-sm text-slate-300">
+        <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 shadow-2xl backdrop-blur">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 animate-pulse rounded-full bg-blue-400" />
+            <span>Đang tải workspace...</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -56,48 +124,98 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return null;
   }
 
+  const pageTitle = getPageTitle(pathname);
+  const pageDescription = getPageDescription(pathname);
+
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen bg-slate-100 text-slate-950">
       <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside className="hidden w-72 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+        <aside className="hidden w-80 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
           <div className="border-b border-slate-200 px-6 py-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              AI Document Assistant
-            </p>
-            <h1 className="mt-3 text-xl font-bold text-slate-950">
-              Control Panel
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Quản lý tài liệu và workflow AI của anh.
-            </p>
+            <Link href="/dashboard" className="group block">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-xl text-white shadow-lg shadow-slate-900/20 transition group-hover:scale-105">
+                  AI
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-400">
+                    Document AI
+                  </p>
+                  <h1 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                    Assistant Panel
+                  </h1>
+                </div>
+              </div>
+
+              <p className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+                Quản lý tài liệu, chat RAG, tóm tắt, dịch và tạo audio bằng AI.
+              </p>
+            </Link>
           </div>
 
-          <nav className="flex-1 space-y-2 px-4 py-5">
+          <nav className="flex-1 space-y-1.5 overflow-y-auto px-4 py-5">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
+              const active =
+                item.href === "/dashboard"
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                  className={`group flex items-center gap-3 rounded-2xl px-4 py-3 transition ${
                     active
-                      ? "bg-slate-900 text-white"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-slate-950 text-white shadow-lg shadow-slate-900/15"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                   }`}
                 >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
+                  <span
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-lg transition ${
+                      active
+                        ? "bg-white/15"
+                        : "bg-slate-100 group-hover:bg-white"
+                    }`}
+                  >
+                    {item.icon}
+                  </span>
+
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold">
+                      {item.label}
+                    </span>
+                    <span
+                      className={`mt-0.5 block truncate text-xs ${
+                        active ? "text-slate-300" : "text-slate-400"
+                      }`}
+                    >
+                      {item.description}
+                    </span>
+                  </span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="border-t border-slate-200 px-4 py-4">
+          <div className="border-t border-slate-200 p-4">
+            <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Signed in
+              </p>
+              <p className="mt-2 truncate text-sm font-bold text-slate-900">
+                {user.email}
+              </p>
+              <p className="mt-1 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                {user.role}
+              </p>
+            </div>
+
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >
               <span>↩</span>
               <span>Đăng xuất</span>
@@ -106,50 +224,80 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </aside>
 
         <main className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/85 backdrop-blur">
-            <div className="flex items-center justify-between px-4 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 lg:hidden"
+                  aria-label="Open navigation menu"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl text-slate-700 transition hover:bg-slate-100 lg:hidden"
                 >
-                  ☰
+                  {mobileMenuOpen ? "×" : "☰"}
                 </button>
 
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Workspace
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                    {pageDescription}
                   </p>
-                  <p className="mt-1 text-sm font-medium text-slate-700">
-                    {user.email}
-                  </p>
+                  <h2 className="mt-1 truncate text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
+                    {pageTitle}
+                  </h2>
                 </div>
               </div>
 
-              <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
-                {user.role}
+              <div className="flex shrink-0 items-center gap-3">
+                <div className="hidden text-right sm:block">
+                  <p className="truncate text-sm font-bold text-slate-900">
+                    {user.email}
+                  </p>
+                  <p className="text-xs font-medium text-slate-400">
+                    {user.role}
+                  </p>
+                </div>
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black uppercase text-white shadow-lg shadow-slate-900/20">
+                  {user.email?.charAt(0) ?? "U"}
+                </div>
               </div>
             </div>
 
             {mobileMenuOpen ? (
-              <div className="border-t border-slate-200 bg-white px-4 py-4 lg:hidden">
+              <div className="border-t border-slate-200 bg-white px-4 py-4 shadow-xl lg:hidden">
                 <nav className="space-y-2">
                   {NAV_ITEMS.map((item) => {
-                    const active = pathname === item.href;
+                    const active =
+                      item.href === "/dashboard"
+                        ? pathname === item.href
+                        : pathname === item.href ||
+                          pathname.startsWith(`${item.href}/`);
 
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                        className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition ${
                           active
-                            ? "bg-slate-900 text-white"
+                            ? "bg-slate-950 text-white"
                             : "bg-slate-50 text-slate-700 hover:bg-slate-100"
                         }`}
                       >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-lg">
+                          {item.icon}
+                        </span>
+
+                        <span>
+                          <span className="block text-sm font-bold">
+                            {item.label}
+                          </span>
+                          <span
+                            className={`mt-0.5 block text-xs ${
+                              active ? "text-slate-300" : "text-slate-400"
+                            }`}
+                          >
+                            {item.description}
+                          </span>
+                        </span>
                       </Link>
                     );
                   })}
@@ -157,7 +305,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-left text-sm font-medium text-slate-700"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-600"
                   >
                     <span>↩</span>
                     <span>Đăng xuất</span>
@@ -167,7 +315,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             ) : null}
           </header>
 
-          {children}
+          <div className="px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
       </div>
     </div>

@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { getDocuments } from '@/features/documents/api/documents.api';
-import type { DocumentItem } from '@/features/documents/types/documents.types';
-import { getSummaries } from '@/features/summaries/api/summaries.api';
-import type { SummaryItem } from '@/features/summaries/types/summaries.types';
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { getDocuments } from "@/features/documents/api/documents.api";
+import type { DocumentItem } from "@/features/documents/types/documents.types";
+import { getSummaries } from "@/features/summaries/api/summaries.api";
+import type { SummaryItem } from "@/features/summaries/types/summaries.types";
 import {
   createTranslation,
   deleteTranslation,
   getTranslations,
-} from '../api/translations.api';
+} from "../api/translations.api";
 import type {
   TranslationItem,
   TranslationSourceType,
   TranslationsListResponse,
-} from '../types/translations.types';
+} from "../types/translations.types";
 
 const PAGE_SIZE = 10;
 
@@ -26,8 +26,8 @@ const SOURCE_TYPE_OPTIONS: Array<{
   value: TranslationSourceType;
   label: string;
 }> = [
-  { value: 'DOCUMENT', label: 'Document content' },
-  { value: 'SUMMARY', label: 'Summary' },
+  { value: "DOCUMENT", label: "Document content" },
+  { value: "SUMMARY", label: "Summary" },
 ];
 
 function formatDate(value: string) {
@@ -35,10 +35,18 @@ function formatDate(value: string) {
 
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(date);
+}
+
+function truncateText(value: string, maxLength = 620) {
+  const clean = value.replace(/\s+/g, " ").trim();
+
+  if (clean.length <= maxLength) return clean;
+
+  return `${clean.slice(0, maxLength)}...`;
 }
 
 async function copyToClipboard(value: string, successMessage: string) {
@@ -46,7 +54,7 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error('Không thể copy vào clipboard.');
+    toast.error("Cannot copy to clipboard.");
   }
 }
 
@@ -55,7 +63,7 @@ export default function TranslationsPageView() {
   const [summaries, setSummaries] = useState<SummaryItem[]>([]);
   const [translations, setTranslations] = useState<TranslationItem[]>([]);
   const [pagination, setPagination] =
-    useState<TranslationsListResponse['pagination']>({
+    useState<TranslationsListResponse["pagination"]>({
       page: 1,
       limit: PAGE_SIZE,
       total: 0,
@@ -68,29 +76,35 @@ export default function TranslationsPageView() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingSummaries, setLoadingSummaries] = useState(false);
 
-  const [documentId, setDocumentId] = useState('');
+  const [documentId, setDocumentId] = useState("");
   const [sourceType, setSourceType] =
-    useState<TranslationSourceType>('DOCUMENT');
-  const [summaryId, setSummaryId] = useState('');
-  const [sourceLanguage, setSourceLanguage] = useState('');
-  const [targetLanguage, setTargetLanguage] = useState('en');
-  const [style, setStyle] = useState('');
+    useState<TranslationSourceType>("DOCUMENT");
+  const [summaryId, setSummaryId] = useState("");
+  const [sourceLanguage, setSourceLanguage] = useState("");
+  const [targetLanguage, setTargetLanguage] = useState("en");
+  const [style, setStyle] = useState("");
 
-  const [filterDocumentId, setFilterDocumentId] = useState('');
+  const [filterDocumentId, setFilterDocumentId] = useState("");
   const [filterSourceType, setFilterSourceType] = useState<
-    TranslationSourceType | ''
-  >('');
+    TranslationSourceType | ""
+  >("");
   const [page, setPage] = useState(1);
 
   async function loadDocuments() {
-    const data = await getDocuments({
-      page: 1,
-      limit: 100,
-      sortBy: 'updatedAt',
-      sortOrder: 'desc',
-    });
+    try {
+      const data = await getDocuments({
+        page: 1,
+        limit: 100,
+        sortBy: "updatedAt",
+        sortOrder: "desc",
+      });
 
-    setDocuments(data.items);
+      setDocuments(data.items);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Cannot load documents.",
+      );
+    }
   }
 
   async function loadSummaries(documentIdValue: string) {
@@ -112,9 +126,7 @@ export default function TranslationsPageView() {
     } catch (error) {
       setSummaries([]);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Không thể tải danh sách summary',
+        error instanceof Error ? error.message : "Cannot load summaries.",
       );
     } finally {
       setLoadingSummaries(false);
@@ -140,7 +152,7 @@ export default function TranslationsPageView() {
       setPagination(data.pagination);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải translations',
+        error instanceof Error ? error.message : "Cannot load translations.",
       );
     } finally {
       setLoading(false);
@@ -149,12 +161,12 @@ export default function TranslationsPageView() {
 
   async function handleGenerateTranslation() {
     if (!documentId) {
-      toast.error('Anh cần chọn document trước.');
+      toast.error("Please select a document first.");
       return;
     }
 
-    if (sourceType === 'SUMMARY' && !summaryId) {
-      toast.error('Anh cần chọn summary trước khi dịch từ summary.');
+    if (sourceType === "SUMMARY" && !summaryId) {
+      toast.error("Please select a summary first.");
       return;
     }
 
@@ -164,18 +176,18 @@ export default function TranslationsPageView() {
       await createTranslation({
         documentId,
         sourceType,
-        sourceId: sourceType === 'SUMMARY' ? summaryId : undefined,
+        sourceId: sourceType === "SUMMARY" ? summaryId : undefined,
         sourceLanguage: sourceLanguage.trim() || undefined,
-        targetLanguage: targetLanguage.trim() || 'en',
+        targetLanguage: targetLanguage.trim() || "en",
         style: style.trim() || undefined,
       });
 
-      toast.success('Tạo translation thành công.');
+      toast.success("Translation created.");
       setPage(1);
       await loadTranslations(1, filterDocumentId, filterSourceType);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Tạo translation thất bại',
+        error instanceof Error ? error.message : "Cannot create translation.",
       );
     } finally {
       setGenerating(false);
@@ -188,7 +200,7 @@ export default function TranslationsPageView() {
     try {
       setIsDeleting(true);
       await deleteTranslation(deleteTarget.id);
-      toast.success('Đã xóa translation.');
+      toast.success("Translation deleted.");
       setDeleteTarget(null);
 
       const nextPage =
@@ -198,7 +210,7 @@ export default function TranslationsPageView() {
       await loadTranslations(nextPage, filterDocumentId, filterSourceType);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Xóa translation thất bại',
+        error instanceof Error ? error.message : "Cannot delete translation.",
       );
     } finally {
       setIsDeleting(false);
@@ -214,8 +226,8 @@ export default function TranslationsPageView() {
   }, [page, filterDocumentId, filterSourceType]);
 
   useEffect(() => {
-    if (sourceType !== 'SUMMARY') {
-      setSummaryId('');
+    if (sourceType !== "SUMMARY") {
+      setSummaryId("");
       setSummaries([]);
       return;
     }
@@ -235,66 +247,113 @@ export default function TranslationsPageView() {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="mb-4">
+      <div className="space-y-8">
+        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-8 p-6 sm:p-8 xl:grid-cols-[1.05fr_0.95fr] xl:p-10">
+            <div className="flex flex-col justify-between">
+              <div>
                 <Link
                   href="/dashboard"
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Về Dashboard
+                  ← Back to dashboard
                 </Link>
+
+                <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Translation workspace
+                </div>
+
+                <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                  Translate document content
+                </h1>
+
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                  Create translations from full document content or previously
+                  generated summaries, then reuse them from history.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition hover:border-indigo-100 hover:bg-white hover:shadow-sm">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-xs font-semibold tracking-wide text-indigo-700 ring-1 ring-indigo-100">
+                    TRN
+                  </div>
+                  <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+                </div>
+
+                <p className="text-3xl font-semibold tracking-tight text-slate-950">
+                  {pagination.total}
+                </p>
+
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
+                  Total translations
+                </h3>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Saved translation records
+                </p>
               </div>
 
-              <p className="text-sm font-medium text-slate-500">
-                AI Document Assistant
-              </p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-                Translations
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-500">
-                Dịch document content hoặc summary sang ngôn ngữ đích, lưu lại lịch sử để copy và tái sử dụng.
-              </p>
-            </div>
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5 transition hover:border-indigo-100 hover:bg-white hover:shadow-sm">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-xs font-semibold tracking-wide text-cyan-700 ring-1 ring-cyan-100">
+                    SRC
+                  </div>
+                  <span className="h-2.5 w-2.5 rounded-full bg-cyan-500" />
+                </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
-                Total translations
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                {pagination.total}
-              </p>
+                <p className="text-3xl font-semibold tracking-tight text-slate-950">
+                  {documents.length}
+                </p>
+
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">
+                  Available sources
+                </h3>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Documents loaded for translation
+                </p>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-5">
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Generate translation
+        <section className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
+          <aside className="space-y-6">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-6">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                  Generate
+                </p>
+
+                <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                  New translation
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Có thể dịch trực tiếp từ extracted content của document hoặc từ một summary đã tạo trước đó.
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  Select the source, target language and output style.
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div>
+                <div className="space-y-2">
                   <label
                     htmlFor="translation-document"
-                    className="mb-2 block text-sm font-medium text-slate-700"
+                    className="text-sm font-semibold text-slate-700"
                   >
                     Document
                   </label>
+
                   <select
                     id="translation-document"
                     value={documentId}
-                    onChange={(e) => setDocumentId(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                    onChange={(event) => setDocumentId(event.target.value)}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   >
-                    <option value="">Chọn tài liệu...</option>
+                    <option value="">Select document...</option>
                     {documents.map((doc) => (
                       <option key={doc.id} value={doc.id}>
                         {doc.title} — {doc.status}
@@ -303,21 +362,24 @@ export default function TranslationsPageView() {
                   </select>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                  <div className="space-y-2">
                     <label
                       htmlFor="translation-source-type"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+                      className="text-sm font-semibold text-slate-700"
                     >
                       Source type
                     </label>
+
                     <select
                       id="translation-source-type"
                       value={sourceType}
-                      onChange={(e) =>
-                        setSourceType(e.target.value as TranslationSourceType)
+                      onChange={(event) =>
+                        setSourceType(
+                          event.target.value as TranslationSourceType,
+                        )
                       }
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     >
                       {SOURCE_TYPE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
@@ -327,328 +389,365 @@ export default function TranslationsPageView() {
                     </select>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <label
                       htmlFor="translation-target-language"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+                      className="text-sm font-semibold text-slate-700"
                     >
                       Target language
                     </label>
+
                     <input
                       id="translation-target-language"
                       value={targetLanguage}
-                      onChange={(e) => setTargetLanguage(e.target.value)}
-                      placeholder="en / vi / ja..."
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      onChange={(event) => setTargetLanguage(event.target.value)}
+                      placeholder="en / vi / ja"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
                   </div>
                 </div>
 
-                {sourceType === 'SUMMARY' ? (
-                  <div>
+                {sourceType === "SUMMARY" ? (
+                  <div className="space-y-2">
                     <label
                       htmlFor="translation-summary"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+                      className="text-sm font-semibold text-slate-700"
                     >
                       Summary source
                     </label>
+
                     <select
                       id="translation-summary"
                       value={summaryId}
-                      onChange={(e) => setSummaryId(e.target.value)}
+                      onChange={(event) => setSummaryId(event.target.value)}
                       disabled={!documentId || loadingSummaries}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                     >
                       <option value="">
                         {!documentId
-                          ? 'Chọn document trước...'
+                          ? "Select document first..."
                           : loadingSummaries
-                            ? 'Đang tải summaries...'
-                            : 'Chọn summary...'}
+                            ? "Loading summaries..."
+                            : "Select summary..."}
                       </option>
+
                       {summaries.map((summary) => (
                         <option key={summary.id} value={summary.id}>
-                          {summary.summaryType} — {summary.language} —{' '}
-                          {summary.createdAt}
+                          {summary.summaryType} — {summary.language} —{" "}
+                          {formatDate(summary.createdAt)}
                         </option>
                       ))}
                     </select>
                   </div>
                 ) : null}
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                  <div className="space-y-2">
                     <label
                       htmlFor="translation-source-language"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+                      className="text-sm font-semibold text-slate-700"
                     >
-                      Source language (optional)
+                      Source language
                     </label>
+
                     <input
                       id="translation-source-language"
                       value={sourceLanguage}
-                      onChange={(e) => setSourceLanguage(e.target.value)}
-                      placeholder="Để trống để backend tự suy ra"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      onChange={(event) =>
+                        setSourceLanguage(event.target.value)
+                      }
+                      placeholder="Optional"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <label
                       htmlFor="translation-style"
-                      className="mb-2 block text-sm font-medium text-slate-700"
+                      className="text-sm font-semibold text-slate-700"
                     >
-                      Style (optional)
+                      Style
                     </label>
+
                     <input
                       id="translation-style"
                       value={style}
-                      onChange={(e) => setStyle(e.target.value)}
-                      placeholder="Ví dụ: tự nhiên, chuyên nghiệp, ngắn gọn..."
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                      onChange={(event) => setStyle(event.target.value)}
+                      placeholder="Natural, formal, concise..."
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
                   </div>
                 </div>
 
                 {selectedDocument ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                    <p className="font-medium text-slate-800">
+                  <div className="rounded-3xl border border-indigo-100 bg-indigo-50/50 p-4">
+                    <p className="truncate text-sm font-semibold text-slate-950">
                       {selectedDocument.title}
                     </p>
-                    <p className="mt-1">{selectedDocument.originalFilename}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Status: {selectedDocument.status}
+
+                    <p className="mt-1 truncate text-sm text-slate-500">
+                      {selectedDocument.originalFilename}
                     </p>
 
-                    {selectedSummary ? (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Summary nguồn: {selectedSummary.summaryType} •{' '}
-                        {selectedSummary.language}
-                      </p>
-                    ) : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+                        {selectedDocument.status}
+                      </span>
+
+                      {selectedSummary ? (
+                        <span className="rounded-full border border-cyan-100 bg-white px-3 py-1 text-xs font-semibold text-cyan-700">
+                          {selectedSummary.summaryType} ·{" "}
+                          {selectedSummary.language}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
 
                 <button
                   type="button"
                   onClick={() => void handleGenerateTranslation()}
-                  disabled={generating}
-                  className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  disabled={
+                    generating ||
+                    !documentId ||
+                    (sourceType === "SUMMARY" && !summaryId)
+                  }
+                  className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  {generating
-                    ? 'Đang tạo translation...'
-                    : 'Generate translation'}
+                  {generating ? "Generating..." : "Generate translation"}
                 </button>
               </div>
             </section>
+          </aside>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    Translation history
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Lịch sử các bản dịch đã tạo từ document hoặc summary.
-                  </p>
-                </div>
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                  History
+                </p>
 
-                <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
-                  <div className="sm:w-72">
-                    <label
-                      htmlFor="translation-filter-document"
-                      className="mb-2 block text-sm font-medium text-slate-700"
-                    >
-                      Filter by document
-                    </label>
-                    <select
-                      id="translation-filter-document"
-                      value={filterDocumentId}
-                      onChange={(e) => {
-                        setFilterDocumentId(e.target.value);
-                        setPage(1);
-                      }}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                    >
-                      <option value="">Tất cả tài liệu</option>
-                      {documents.map((doc) => (
-                        <option key={doc.id} value={doc.id}>
-                          {doc.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  Translation history
+                </h2>
 
-                  <div className="sm:w-56">
-                    <label
-                      htmlFor="translation-filter-source-type"
-                      className="mb-2 block text-sm font-medium text-slate-700"
-                    >
-                      Filter by source
-                    </label>
-                    <select
-                      id="translation-filter-source-type"
-                      value={filterSourceType}
-                      onChange={(e) => {
-                        setFilterSourceType(
-                          (e.target.value as TranslationSourceType | '') || '',
-                        );
-                        setPage(1);
-                      }}
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                    >
-                      <option value="">Tất cả nguồn</option>
-                      {SOURCE_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Review generated translations and copy reusable output.
+                </p>
               </div>
 
-              {loading ? (
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
+                <div className="space-y-2 sm:w-72">
+                  <label
+                    htmlFor="translation-filter-document"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Filter by document
+                  </label>
+
+                  <select
+                    id="translation-filter-document"
+                    value={filterDocumentId}
+                    onChange={(event) => {
+                      setFilterDocumentId(event.target.value);
+                      setPage(1);
+                    }}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                  >
+                    <option value="">All documents</option>
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 sm:w-56">
+                  <label
+                    htmlFor="translation-filter-source-type"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Filter by source
+                  </label>
+
+                  <select
+                    id="translation-filter-source-type"
+                    value={filterSourceType}
+                    onChange={(event) => {
+                      setFilterSourceType(
+                        (event.target.value as TranslationSourceType | "") ||
+                          "",
+                      );
+                      setPage(1);
+                    }}
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                  >
+                    <option value="">All sources</option>
+                    {SOURCE_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-52 animate-pulse rounded-3xl border border-slate-200 bg-slate-50"
+                  />
+                ))}
+              </div>
+            ) : translations.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-14 text-center">
+                <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
+
+                <p className="text-sm font-semibold text-slate-800">
+                  No translations yet
+                </p>
+
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                  Create the first translation from a document or summary.
+                </p>
+              </div>
+            ) : (
+              <>
                 <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-slate-50"
-                    />
+                  {translations.map((translation) => (
+                    <article
+                      key={translation.id}
+                      className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
+                    >
+                      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                            {translation.sourceLabel}
+                          </p>
+
+                          <h3 className="mt-2 truncate text-lg font-semibold tracking-tight text-slate-950">
+                            {translation.documentTitle}
+                          </h3>
+
+                          <p className="mt-1 truncate text-sm text-slate-500">
+                            {translation.documentOriginalFilename}
+                          </p>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                              {translation.sourceLanguage} →{" "}
+                              {translation.targetLanguage}
+                            </span>
+
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                              {formatDate(translation.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void copyToClipboard(
+                                translation.content,
+                                "Translation copied.",
+                              )
+                            }
+                            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                          >
+                            Copy
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(translation)}
+                            className="rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {translation.style ? (
+                        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                          <span className="font-semibold text-slate-800">
+                            Style:
+                          </span>{" "}
+                          {translation.style}
+                        </div>
+                      ) : null}
+
+                      <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700">
+                        {truncateText(translation.content)}
+                      </p>
+
+                      <div className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
+                        Model{" "}
+                        <span className="font-medium text-slate-600">
+                          {translation.createdByAiModel}
+                        </span>
+                      </div>
+                    </article>
                   ))}
                 </div>
-              ) : translations.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl">
-                    🌐
+
+                <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-500">
+                    Page{" "}
+                    <span className="font-semibold text-slate-800">
+                      {pagination.page}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold text-slate-800">
+                      {pagination.totalPages}
+                    </span>
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      disabled={pagination.page <= 1}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPage((prev) =>
+                          Math.min(pagination.totalPages, prev + 1),
+                        )
+                      }
+                      disabled={pagination.page >= pagination.totalPages}
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Next
+                    </button>
                   </div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Chưa có translation nào
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Hãy tạo bản dịch đầu tiên từ document content hoặc summary.
-                  </p>
                 </div>
-              ) : (
-                <>
-                  <div className="space-y-4">
-                    {translations.map((translation) => (
-                      <article
-                        key={translation.id}
-                        className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0">
-                            <h3 className="truncate text-base font-semibold text-slate-900">
-                              {translation.documentTitle}
-                            </h3>
-                            <p className="mt-1 truncate text-sm text-slate-500">
-                              {translation.documentOriginalFilename}
-                            </p>
-
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                {translation.sourceLabel}
-                              </span>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                {translation.sourceLanguage} →{' '}
-                                {translation.targetLanguage}
-                              </span>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                                {formatDate(translation.createdAt)}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void copyToClipboard(
-                                  translation.content,
-                                  'Đã copy translation.',
-                                )
-                              }
-                              className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                            >
-                              Copy
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(translation)}
-                              className="rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                            >
-                              Xóa
-                            </button>
-                          </div>
-                        </div>
-
-                        {translation.style ? (
-                          <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-                            Style: {translation.style}
-                          </div>
-                        ) : null}
-
-                        <div className="mt-4 max-h-72 overflow-auto rounded-2xl border border-slate-200 bg-white p-4">
-                          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-7 text-slate-700">
-                            {translation.content}
-                          </pre>
-                        </div>
-
-                        <p className="mt-3 text-xs text-slate-400">
-                          Model: {translation.createdByAiModel}
-                        </p>
-                      </article>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 sm:flex-row">
-                    <p className="text-sm text-slate-500">
-                      Trang{' '}
-                      <span className="font-semibold text-slate-900">
-                        {pagination.page}
-                      </span>{' '}
-                      / {pagination.totalPages}
-                    </p>
-
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                        disabled={pagination.page <= 1}
-                        className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Trang trước
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPage((prev) =>
-                            Math.min(pagination.totalPages, prev + 1),
-                          )
-                        }
-                        disabled={pagination.page >= pagination.totalPages}
-                        className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Trang sau
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-            </section>
-          </div>
-        </div>
+              </>
+            )}
+          </section>
+        </section>
       </div>
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Xóa translation?"
-        description={`Translation của tài liệu "${deleteTarget?.documentTitle || ''}" sẽ bị xóa khỏi lịch sử.`}
-        confirmText={isDeleting ? 'Đang xóa...' : 'Xóa translation'}
-        cancelText="Hủy"
+        title="Delete translation?"
+        description={
+          deleteTarget
+            ? `The translation for "${deleteTarget.documentTitle}" will be deleted.`
+            : "This translation will be deleted."
+        }
+        confirmText="Delete translation"
+        cancelText="Cancel"
         tone="danger"
         loading={isDeleting}
         onCancel={() => {

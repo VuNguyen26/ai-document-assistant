@@ -1,23 +1,22 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
-
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
   deleteChatSession,
   getChatMessages,
   getChatSessions,
   renameChatSession,
   streamChat,
-} from '@/features/chat/api/chat.api';
-import type {
-  ChatCitation,
-  ChatMessage,
-  ChatSession,
-} from '@/features/chat/types/chat.types';
-import { getWorkspaceById } from '../api/workspaces.api';
-import type { WorkspaceDetail } from '../types/workspaces.types';
+} from "@/features/chat/api/chat.api";
+import ChatCitations from "@/features/chat/components/ChatCitations";
+import MarkdownMessage from "@/features/chat/components/MarkdownMessage";
+import type { ChatMessage, ChatSession } from "@/features/chat/types/chat.types";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
+
+import { getWorkspaceById } from "../api/workspaces.api";
+import type { WorkspaceDetail } from "../types/workspaces.types";
 
 type WorkspaceChatViewProps = {
   workspaceId: string;
@@ -28,9 +27,22 @@ function formatDate(value: string) {
 
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function formatTime(value?: string | null) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -39,7 +51,7 @@ async function copyToClipboard(text: string, successMessage: string) {
     await navigator.clipboard.writeText(text);
     toast.success(successMessage);
   } catch {
-    toast.error('Không thể copy vào clipboard.');
+    toast.error("Cannot copy to clipboard.");
   }
 }
 
@@ -50,11 +62,21 @@ export default function WorkspaceChatView({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState("");
+
   const [loadingWorkspace, setLoadingWorkspace] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
+    null,
+  );
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   async function loadWorkspace() {
     const data = await getWorkspaceById(workspaceId);
@@ -82,7 +104,9 @@ export default function WorkspaceChatView({
       if (selectLatest || !activeSessionId) {
         setActiveSessionId(result.data[0].id);
       } else {
-        const stillExists = result.data.some((item) => item.id === activeSessionId);
+        const stillExists = result.data.some(
+          (item) => item.id === activeSessionId,
+        );
 
         if (!stillExists) {
           setActiveSessionId(result.data[0].id);
@@ -90,7 +114,7 @@ export default function WorkspaceChatView({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải chat sessions',
+        error instanceof Error ? error.message : "Cannot load chat sessions.",
       );
     } finally {
       setLoadingSessions(false);
@@ -104,7 +128,7 @@ export default function WorkspaceChatView({
       setMessages(data);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải chat messages',
+        error instanceof Error ? error.message : "Cannot load chat messages.",
       );
     } finally {
       setLoadingMessages(false);
@@ -118,7 +142,7 @@ export default function WorkspaceChatView({
         await Promise.all([loadWorkspace(), loadSessions(true)]);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : 'Không thể tải workspace chat',
+          error instanceof Error ? error.message : "Cannot load workspace chat.",
         );
       } finally {
         setLoadingWorkspace(false);
@@ -137,78 +161,93 @@ export default function WorkspaceChatView({
     void loadMessages(activeSessionId);
   }, [activeSessionId]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, sending]);
+
   const activeSession = useMemo(
     () => sessions.find((item) => item.id === activeSessionId) || null,
     [sessions, activeSessionId],
   );
 
-  async function handleRenameSession(session: ChatSession) {
-    const nextTitle = window.prompt(
-      'Nhập tên mới cho chat session',
-      session.title || '',
-    );
+  async function handleRenameSession(sessionId: string) {
+    const nextTitle = renameValue.trim();
 
-    if (!nextTitle || !nextTitle.trim()) return;
+    if (!nextTitle) {
+      toast.error("Please enter a session title.");
+      return;
+    }
 
     try {
-      await renameChatSession(session.id, {
-        title: nextTitle.trim(),
+      await renameChatSession(sessionId, {
+        title: nextTitle,
       });
 
-      toast.success('Đã đổi tên chat session.');
+      setRenamingSessionId(null);
+      setRenameValue("");
+      toast.success("Session renamed.");
       await loadSessions(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Đổi tên chat session thất bại',
+        error instanceof Error ? error.message : "Cannot rename session.",
       );
     }
   }
 
-  async function handleDeleteSession(session: ChatSession) {
-    const confirmed = window.confirm(
-      `Xóa chat session "${session.title || 'Untitled chat'}"?`,
-    );
-
-    if (!confirmed) return;
+  async function confirmDeleteSession() {
+    if (!deleteTarget) return;
 
     try {
-      await deleteChatSession(session.id);
-      toast.success('Đã xóa chat session.');
+      setIsDeletingSession(true);
+      await deleteChatSession(deleteTarget.id);
+      toast.success("Session deleted.");
 
-      if (activeSessionId === session.id) {
+      if (activeSessionId === deleteTarget.id) {
         setActiveSessionId(null);
         setMessages([]);
       }
 
+      setDeleteTarget(null);
       await loadSessions(true);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Xóa chat session thất bại',
+        error instanceof Error ? error.message : "Cannot delete session.",
       );
+    } finally {
+      setIsDeletingSession(false);
     }
+  }
+
+  function handleNewChat() {
+    setActiveSessionId(null);
+    setMessages([]);
+    setQuestion("");
+    setRenamingSessionId(null);
+    setRenameValue("");
+    toast.success("Ready for a new workspace chat.");
   }
 
   async function handleSendQuestion() {
     const trimmedQuestion = question.trim();
 
     if (!trimmedQuestion) {
-      toast.error('Anh cần nhập câu hỏi.');
+      toast.error("Please enter a question.");
       return;
     }
 
     if (!workspace) {
-      toast.error('Workspace chưa sẵn sàng.');
+      toast.error("Workspace is not ready.");
       return;
     }
 
     if (workspace.readyDocumentsCount === 0) {
-      toast.error('Workspace chưa có document READY để chat.');
+      toast.error("This workspace has no READY document for chat.");
       return;
     }
 
     const tempUserMessage: ChatMessage = {
       id: `temp-user-${Date.now()}`,
-      role: 'USER',
+      role: "USER",
       content: trimmedQuestion,
       createdAt: new Date().toISOString(),
     };
@@ -217,14 +256,14 @@ export default function WorkspaceChatView({
 
     const tempAssistantMessage: ChatMessage = {
       id: tempAssistantMessageId,
-      role: 'ASSISTANT',
-      content: '',
+      role: "ASSISTANT",
+      content: "",
       createdAt: new Date().toISOString(),
       citations: [],
     };
 
     setMessages((prev) => [...prev, tempUserMessage, tempAssistantMessage]);
-    setQuestion('');
+    setQuestion("");
     setSending(true);
 
     try {
@@ -266,13 +305,13 @@ export default function WorkspaceChatView({
             await loadMessages(sessionId);
           },
           onError: ({ message }) => {
-            toast.error(message || 'Stream chat thất bại.');
+            toast.error(message || "Stream chat failed.");
           },
         },
       );
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Gửi câu hỏi thất bại',
+        error instanceof Error ? error.message : "Cannot send question.",
       );
 
       setMessages((prev) =>
@@ -289,351 +328,522 @@ export default function WorkspaceChatView({
 
   if (loadingWorkspace) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="space-y-4">
-            <div className="h-12 w-48 animate-pulse rounded-2xl bg-slate-200" />
-            <div className="h-24 animate-pulse rounded-3xl bg-white" />
-            <div className="h-[600px] animate-pulse rounded-3xl bg-white" />
-          </div>
+      <div className="space-y-6">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="h-5 w-40 animate-pulse rounded-full bg-slate-100" />
+          <div className="mt-5 h-10 w-80 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="mt-4 h-4 w-full max-w-2xl animate-pulse rounded-full bg-slate-100" />
         </div>
+
+        <div className="h-[720px] animate-pulse rounded-[2rem] border border-slate-200 bg-white shadow-sm" />
       </div>
     );
   }
 
   if (!workspace) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-            <p className="text-sm font-medium text-slate-700">
-              Không tìm thấy workspace
-            </p>
-            <Link
-              href="/workspaces"
-              className="mt-4 inline-flex rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-            >
-              ← Quay lại Workspaces
-            </Link>
-          </div>
-        </div>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-rose-500" />
+
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+          Workspace not found
+        </h1>
+
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
+          This workspace does not exist or you do not have access.
+        </p>
+
+        <Link
+          href="/workspaces"
+          className="mt-6 inline-flex rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+        >
+          Back to workspaces
+        </Link>
       </div>
     );
   }
 
+  const chatDisabled = sending || workspace.readyDocumentsCount === 0;
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-8">
-          <div className="mb-4 flex flex-wrap gap-3">
-            <Link
-              href={`/workspaces/${workspaceId}`}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              ← Về Workspace
-            </Link>
+    <>
+      <div className="space-y-6">
+        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-6 p-6 sm:p-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0">
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/workspaces/${workspaceId}`}
+                  className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  ← Back to workspace
+                </Link>
 
-            <Link
-              href="/workspaces"
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
-            >
-              Workspaces
-            </Link>
-          </div>
-
-          <p className="text-sm font-medium text-slate-500">Workspace chat</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-            {workspace.name}
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Chat trên toàn bộ documents trong workspace. Semantic search sẽ chạy trên các tài liệu READY nằm trong workspace này.
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-              {workspace.documentsCount} documents
-            </span>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-              {workspace.readyDocumentsCount} ready
-            </span>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-              {workspace.incompleteDocumentsCount} incomplete
-            </span>
-          </div>
-        </div>
-
-        {workspace.readyDocumentsCount === 0 ? (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-5 text-sm text-amber-800">
-            Workspace này chưa có document READY. Anh hãy process ít nhất một tài liệu trước khi chat.
-          </div>
-        ) : null}
-
-        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
-          <aside className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-slate-900">
-                  Sessions
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Chat history của workspace này
-                </p>
+                <Link
+                  href="/workspaces"
+                  className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  Workspaces
+                </Link>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveSessionId(null);
-                  setMessages([]);
-                }}
-                className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-              >
-                Chat mới
-              </button>
-            </div>
-
-            {loadingSessions ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-20 animate-pulse rounded-2xl bg-slate-100"
-                  />
-                ))}
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Workspace chat
               </div>
-            ) : sessions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
-                <p className="text-sm text-slate-600">Chưa có session nào</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {sessions.map((session) => {
-                  const isActive = session.id === activeSessionId;
 
-                  return (
-                    <button
-                      key={session.id}
-                      type="button"
-                      onClick={() => setActiveSessionId(session.id)}
-                      className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
-                        isActive
-                          ? 'border-slate-900 bg-slate-900 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-800 hover:bg-white'
-                      }`}
-                    >
-                      <p className="truncate text-sm font-semibold">
-                        {session.title || 'Untitled chat'}
-                      </p>
-                      <p
-                        className={`mt-1 text-xs ${
-                          isActive ? 'text-slate-300' : 'text-slate-500'
-                        }`}
-                      >
-                        {formatDate(session.updatedAt)}
-                      </p>
+              <h1 className="mt-5 max-w-3xl truncate text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
+                {workspace.name}
+              </h1>
 
-                      <div className="mt-3 flex gap-2">
-                        <span
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void handleRenameSession(session);
-                          }}
-                          className={`rounded-full px-2 py-1 text-[11px] ${
-                            isActive
-                              ? 'bg-slate-700 text-white'
-                              : 'bg-white text-slate-600'
-                          }`}
-                        >
-                          Rename
-                        </span>
-                        <span
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            void handleDeleteSession(session);
-                          }}
-                          className={`rounded-full px-2 py-1 text-[11px] ${
-                            isActive
-                              ? 'bg-rose-400/20 text-rose-100'
-                              : 'bg-white text-rose-600'
-                          }`}
-                        >
-                          Delete
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </aside>
-
-          <section className="flex min-h-[720px] flex-col rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-6 py-5">
-              <h2 className="text-lg font-semibold text-slate-900">
-                {activeSession?.title || 'Workspace chat'}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Trả lời dựa trên các chunk được semantic search từ toàn bộ documents trong workspace.
+              <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+                Ask questions across all READY documents in this workspace. The
+                answer is grounded by semantic search results from linked files.
               </p>
             </div>
 
-            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
-              {loadingMessages ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-24 animate-pulse rounded-3xl bg-slate-100"
-                    />
-                  ))}
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl">
-                    💬
+            <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-xs font-semibold tracking-wide text-indigo-700 ring-1 ring-indigo-100">
+                    DOC
                   </div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Bắt đầu chat với workspace
-                  </p>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Đặt câu hỏi để truy xuất thông tin từ nhiều tài liệu trong cùng workspace.
-                  </p>
+                  <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
                 </div>
-              ) : (
-                messages.map((message) => {
-                  const isUser = message.role === 'USER';
-                  const citations = message.citations || [];
 
-                  return (
-                    <article
-                      key={message.id}
-                      className={`rounded-3xl px-5 py-4 ${
-                        isUser
-                          ? 'ml-auto max-w-3xl bg-slate-900 text-white'
-                          : 'max-w-4xl border border-slate-200 bg-slate-50 text-slate-800'
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                          {isUser ? 'You' : 'Assistant'}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void copyToClipboard(
-                              message.content,
-                              isUser
-                                ? 'Đã copy câu hỏi.'
-                                : 'Đã copy câu trả lời.',
-                            )
-                          }
-                          className={`rounded-full px-3 py-1 text-xs ${
-                            isUser
-                              ? 'bg-white/10 text-white'
-                              : 'bg-white text-slate-600'
+                <p className="text-3xl font-semibold tracking-tight text-slate-950">
+                  {workspace.documentsCount}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  Documents
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-xs font-semibold tracking-wide text-emerald-700 ring-1 ring-emerald-100">
+                    RDY
+                  </div>
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                </div>
+
+                <p className="text-3xl font-semibold tracking-tight text-slate-950">
+                  {workspace.readyDocumentsCount}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  Ready
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-xs font-semibold tracking-wide text-amber-700 ring-1 ring-amber-100">
+                    WIP
+                  </div>
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                </div>
+
+                <p className="text-3xl font-semibold tracking-tight text-slate-950">
+                  {workspace.incompleteDocumentsCount}
+                </p>
+
+                <p className="mt-2 text-sm font-semibold text-slate-900">
+                  Incomplete
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {workspace.readyDocumentsCount === 0 ? (
+          <div className="rounded-[2rem] border border-amber-100 bg-amber-50 px-6 py-5 text-sm leading-6 text-amber-800">
+            This workspace has no READY document. Process at least one linked
+            document before starting workspace chat.
+          </div>
+        ) : null}
+
+        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid h-[calc(100vh-190px)] min-h-[680px] max-h-[860px] xl:grid-cols-[320px_minmax(0,1fr)]">
+            <aside className="hidden border-r border-slate-200 bg-white xl:flex xl:flex-col">
+              <div className="border-b border-slate-200 p-5">
+                <div className="mb-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                    Conversations
+                  </p>
+
+                  <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
+                    Workspace sessions
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleNewChat}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
+                >
+                  New chat
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4">
+                {loadingSessions ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-[88px] animate-pulse rounded-2xl border border-slate-200 bg-slate-50"
+                      />
+                    ))}
+                  </div>
+                ) : sessions.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                    <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
+
+                    <p className="text-sm font-semibold text-slate-800">
+                      No conversations yet
+                    </p>
+
+                    <p className="mx-auto mt-2 max-w-[220px] text-sm leading-6 text-slate-500">
+                      Send your first question to create a workspace chat.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {sessions.map((session) => {
+                      const isActive = session.id === activeSessionId;
+                      const isRenaming = renamingSessionId === session.id;
+
+                      return (
+                        <div
+                          key={session.id}
+                          className={`rounded-2xl border p-3 transition ${
+                            isActive
+                              ? "border-indigo-200 bg-indigo-50/70 shadow-sm"
+                              : "border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/30"
                           }`}
                         >
-                          Copy
-                        </button>
-                      </div>
+                          {isRenaming ? (
+                            <div className="space-y-3">
+                              <input
+                                type="text"
+                                value={renameValue}
+                                onChange={(event) =>
+                                  setRenameValue(event.target.value)
+                                }
+                                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
+                                placeholder="New title"
+                              />
 
-                      <div className="whitespace-pre-wrap break-words text-sm leading-7">
-                        {message.content || (sending && !isUser ? '...' : '')}
-                      </div>
-
-                      {citations.length > 0 ? (
-                        <div className="mt-4 space-y-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Citations
-                          </p>
-
-                          {citations.map((citation: ChatCitation, index) => (
-                            <div
-                              key={citation.id || `${message.id}-${index}`}
-                              className="rounded-2xl border border-slate-200 bg-white p-4"
-                            >
-                              <div className="flex flex-wrap gap-2 text-xs text-slate-500">
-                                <span className="rounded-full bg-slate-100 px-2 py-1">
-                                  {citation.documentName}
-                                </span>
-                                <span className="rounded-full bg-slate-100 px-2 py-1">
-                                  Chunk #{citation.chunkIndex}
-                                </span>
-                                <span className="rounded-full bg-slate-100 px-2 py-1">
-                                  Score {citation.score}
-                                </span>
-                              </div>
-
-                              <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-sm leading-6 text-slate-700">
-                                {citation.content}
-                              </pre>
-
-                              <div className="mt-3 flex gap-2">
+                              <div className="flex items-center justify-end gap-2">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    void copyToClipboard(
-                                      citation.content,
-                                      'Đã copy chunk.',
-                                    )
-                                  }
-                                  className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+                                  onClick={() => {
+                                    setRenamingSessionId(null);
+                                    setRenameValue("");
+                                  }}
+                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                                 >
-                                  Copy chunk
+                                  Cancel
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    void copyToClipboard(
-                                      `${citation.documentName} - Chunk ${citation.chunkIndex}\n\n${citation.content}`,
-                                      'Đã copy citation.',
-                                    )
+                                    void handleRenameSession(session.id)
                                   }
-                                  className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600"
+                                  className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700"
                                 >
-                                  Copy citation
+                                  Save
                                 </button>
                               </div>
                             </div>
-                          ))}
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setActiveSessionId(session.id)}
+                                className="block w-full text-left"
+                              >
+                                <div className="flex items-start gap-3">
+                                  <span
+                                    className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                                      isActive
+                                        ? "bg-indigo-500"
+                                        : "bg-slate-300"
+                                    }`}
+                                  />
+
+                                  <div className="min-w-0 flex-1">
+                                    <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">
+                                      {session.title || "Untitled chat"}
+                                    </p>
+
+                                    <p className="mt-1 text-xs font-medium text-slate-400">
+                                      {formatDate(session.updatedAt)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </button>
+
+                              <div className="mt-3 flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRenamingSessionId(session.id);
+                                    setRenameValue(session.title || "");
+                                  }}
+                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                                >
+                                  Rename
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteTarget(session)}
+                                  className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      ) : null}
-                    </article>
-                  );
-                })
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </aside>
 
-            <div className="border-t border-slate-200 px-6 py-5">
-              <div className="flex flex-col gap-3">
-                <textarea
-                  value={question}
-                  onChange={(event) => setQuestion(event.target.value)}
-                  rows={4}
-                  placeholder="Hỏi về toàn bộ tài liệu trong workspace này..."
-                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                />
+            <div className="flex min-w-0 flex-col bg-slate-50/60">
+              <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+                <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+                  <div className="min-w-0">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                      Multi-document chat
+                    </div>
 
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-slate-500">
-                    Context được lấy từ tất cả documents READY trong workspace.
-                  </p>
+                    <h2 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">
+                      {activeSession?.title || "Workspace chat"}
+                    </h2>
+
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Answers are generated from READY documents in this
+                      workspace.
+                    </p>
+                  </div>
 
                   <button
                     type="button"
-                    onClick={() => void handleSendQuestion()}
-                    disabled={sending || workspace.readyDocumentsCount === 0}
-                    className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    onClick={handleNewChat}
+                    className="inline-flex h-11 w-fit items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 xl:hidden"
                   >
-                    {sending ? 'Đang trả lời...' : 'Gửi câu hỏi'}
+                    New chat
                   </button>
+                </div>
+              </header>
+
+              <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+                  {loadingMessages ? (
+                    <div className="space-y-4">
+                      {Array.from({ length: 4 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className={`h-24 animate-pulse rounded-3xl ${
+                            index % 2 === 0
+                              ? "ml-auto w-[70%] bg-indigo-100"
+                              : "w-[82%] bg-white"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+                      <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-indigo-500" />
+
+                      <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
+                        Start a workspace conversation
+                      </h3>
+
+                      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
+                        Ask a question that may require information from more
+                        than one document in this workspace.
+                      </p>
+                    </div>
+                  ) : (
+                    messages.map((message) => {
+                      const isUser = message.role === "USER";
+                      const citations = message.citations || [];
+                      const time = formatTime(message.createdAt);
+
+                      return (
+                        <article
+                          key={message.id}
+                          className={`flex ${
+                            isUser ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[88%] rounded-[1.5rem] px-5 py-4 shadow-sm ${
+                              isUser
+                                ? "bg-indigo-600 text-white"
+                                : "border border-slate-200 bg-white text-slate-900"
+                            }`}
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`h-2 w-2 rounded-full ${
+                                    isUser ? "bg-indigo-200" : "bg-emerald-500"
+                                  }`}
+                                />
+
+                                <p
+                                  className={`text-xs font-semibold uppercase tracking-[0.16em] ${
+                                    isUser ? "text-indigo-100" : "text-slate-400"
+                                  }`}
+                                >
+                                  {isUser ? "You" : "Assistant"}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                {time ? (
+                                  <span
+                                    className={`text-xs ${
+                                      isUser
+                                        ? "text-indigo-100"
+                                        : "text-slate-400"
+                                    }`}
+                                  >
+                                    {time}
+                                  </span>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void copyToClipboard(
+                                      message.content,
+                                      isUser
+                                        ? "Question copied."
+                                        : "Answer copied.",
+                                    )
+                                  }
+                                  className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
+                                    isUser
+                                      ? "bg-white/10 text-white hover:bg-white/15"
+                                      : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                                  }`}
+                                >
+                                  Copy
+                                </button>
+                              </div>
+                            </div>
+
+                            {isUser ? (
+                              <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                                {message.content}
+                              </p>
+                            ) : (
+                              <div className="space-y-4">
+                                <MarkdownMessage
+                                  content={
+                                    message.content ||
+                                    (sending ? "Assistant is writing..." : "")
+                                  }
+                                />
+
+                                {citations.length > 0 ? (
+                                  <ChatCitations citations={citations} />
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })
+                  )}
+
+                  {sending ? (
+                    <article className="flex justify-start">
+                      <div className="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+                          <span className="font-medium">
+                            Assistant is writing...
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  ) : null}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-200 bg-white px-4 py-4 sm:px-6">
+                <div className="mx-auto w-full max-w-4xl">
+                  <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-3 shadow-sm transition focus-within:border-indigo-200 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-50">
+                    <div className="flex items-end gap-3">
+                      <textarea
+                        value={question}
+                        onChange={(event) => setQuestion(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            void handleSendQuestion();
+                          }
+                        }}
+                        rows={1}
+                        placeholder="Ask across all ready documents..."
+                        disabled={workspace.readyDocumentsCount === 0 || sending}
+                        className="max-h-44 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => void handleSendQuestion()}
+                        disabled={chatDisabled || !question.trim()}
+                        className="inline-flex h-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
+                      >
+                        {sending ? "Sending" : "Send"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex flex-col justify-between gap-1 px-1 text-xs text-slate-400 sm:flex-row sm:items-center">
+                    <span>
+                      Context is retrieved from READY documents in this
+                      workspace.
+                    </span>
+                    <span>{question.trim().length} characters</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
-    </div>
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete chat session?"
+        description={`Session "${deleteTarget?.title || "Untitled chat"}" will be removed from this workspace chat history.`}
+        confirmText="Delete session"
+        cancelText="Cancel"
+        tone="danger"
+        loading={isDeletingSession}
+        onCancel={() => {
+          if (isDeletingSession) return;
+          setDeleteTarget(null);
+        }}
+        onConfirm={() => void confirmDeleteSession()}
+      />
+    </>
   );
 }
