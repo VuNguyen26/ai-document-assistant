@@ -348,7 +348,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     return (
       <div className="flex h-[620px] items-center justify-center rounded-[2rem] border border-slate-200 bg-white shadow-sm">
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
-          Checking your session...
+          Đang kiểm tra phiên đăng nhập...
         </div>
       </div>
     );
@@ -381,7 +381,7 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
 
           <div className="flex min-w-0 flex-1 flex-col bg-slate-50/60">
             <ChatHeader
-              title={activeSession?.title || "Document Chat"}
+              title={activeSession?.title || "Chat với tài liệu"}
               documentId={documentId}
               onLogout={handleLogout}
               onOpenSessions={() => setMobileSessionsOpen(true)}
@@ -432,14 +432,19 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Xóa cuộc trò chuyện?"
-        description={`Session "${deleteTarget?.title || ""}" sẽ bị xóa khỏi danh sách hội thoại.`}
-        confirmText="Xóa session"
+        description={`Cuộc trò chuyện "${
+          deleteTarget?.title || ""
+        }" sẽ bị xóa khỏi danh sách hội thoại.`}
+        confirmText={isDeletingSession ? "Đang xóa..." : "Xóa cuộc trò chuyện"}
         cancelText="Hủy"
         tone="danger"
         loading={isDeletingSession}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          if (isDeletingSession) return;
+          setDeleteTarget(null);
+        }}
         onConfirm={() => void confirmDeleteSession()}
       />
     </>
   );
-} 
+}

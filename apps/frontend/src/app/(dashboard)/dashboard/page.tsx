@@ -2,33 +2,33 @@ import Link from "next/link";
 
 const STATS = [
   {
-    label: "Documents",
+    label: "Tài liệu",
     value: "0",
-    description: "Uploaded files",
+    description: "Tệp đã tải lên",
     code: "DOC",
     accent: "bg-indigo-50 text-indigo-700 ring-indigo-100",
     dot: "bg-indigo-500",
   },
   {
-    label: "Ready",
+    label: "Sẵn sàng",
     value: "0",
-    description: "Processed files",
+    description: "Tệp đã xử lý",
     code: "RDY",
     accent: "bg-emerald-50 text-emerald-700 ring-emerald-100",
     dot: "bg-emerald-500",
   },
   {
-    label: "Chats",
+    label: "Cuộc trò chuyện",
     value: "0",
-    description: "Saved sessions",
+    description: "Phiên đã lưu",
     code: "CHT",
     accent: "bg-cyan-50 text-cyan-700 ring-cyan-100",
     dot: "bg-cyan-500",
   },
   {
-    label: "Workspaces",
+    label: "Không gian",
     value: "0",
-    description: "Document groups",
+    description: "Nhóm tài liệu",
     code: "WSP",
     accent: "bg-violet-50 text-violet-700 ring-violet-100",
     dot: "bg-violet-500",
@@ -38,26 +38,26 @@ const STATS = [
 const QUICK_ACTIONS = [
   {
     href: "/documents",
-    title: "Upload document",
-    description: "Add a PDF or DOCX file and start processing.",
+    title: "Tải tài liệu",
+    description: "Thêm tệp PDF hoặc DOCX và bắt đầu xử lý.",
     primary: true,
   },
   {
     href: "/documents",
-    title: "Open documents",
-    description: "View uploaded files and processing status.",
+    title: "Mở danh sách tài liệu",
+    description: "Xem các tệp đã tải lên và trạng thái xử lý.",
     primary: false,
   },
   {
     href: "/summaries",
-    title: "Create summary",
-    description: "Generate a shorter version of selected content.",
+    title: "Tạo bản tóm tắt",
+    description: "Tạo phiên bản ngắn gọn hơn từ nội dung đã chọn.",
     primary: false,
   },
   {
     href: "/translations",
-    title: "Translate content",
-    description: "Create translated versions for documents.",
+    title: "Dịch nội dung",
+    description: "Tạo bản dịch cho nội dung trong tài liệu.",
     primary: false,
   },
 ];
@@ -65,49 +65,49 @@ const QUICK_ACTIONS = [
 const WORKFLOW_STEPS = [
   {
     step: "01",
-    title: "Upload",
-    description: "Add a document to your workspace.",
+    title: "Tải lên",
+    description: "Thêm tài liệu vào không gian làm việc.",
   },
   {
     step: "02",
-    title: "Process",
-    description: "Extract text, split content and prepare search data.",
+    title: "Xử lý",
+    description: "Trích xuất văn bản, chia nhỏ nội dung và chuẩn bị dữ liệu tìm kiếm.",
   },
   {
     step: "03",
-    title: "Ask",
-    description: "Start a conversation grounded in document content.",
+    title: "Hỏi đáp",
+    description: "Bắt đầu cuộc trò chuyện dựa trên nội dung tài liệu.",
   },
   {
     step: "04",
-    title: "Reuse",
-    description: "Summarize, translate or create audio from the result.",
+    title: "Tái sử dụng",
+    description: "Tóm tắt, dịch hoặc tạo audio từ kết quả.",
   },
 ];
 
 const PRODUCT_MODULES = [
   {
     href: "/documents",
-    title: "Documents",
-    description: "Upload, manage and review processing status.",
+    title: "Tài liệu",
+    description: "Tải lên, quản lý và theo dõi trạng thái xử lý.",
     bar: "bg-indigo-500",
   },
   {
     href: "/workspaces",
-    title: "Workspaces",
-    description: "Group related documents into focused work areas.",
+    title: "Không gian làm việc",
+    description: "Nhóm các tài liệu liên quan vào từng khu vực làm việc.",
     bar: "bg-violet-500",
   },
   {
     href: "/summaries",
-    title: "Summaries",
-    description: "Create concise summaries from document content.",
+    title: "Tóm tắt",
+    description: "Tạo bản tóm tắt ngắn gọn từ nội dung tài liệu.",
     bar: "bg-cyan-500",
   },
   {
     href: "/translations",
-    title: "Translations",
-    description: "Translate extracted content into another language.",
+    title: "Dịch thuật",
+    description: "Dịch nội dung đã trích xuất sang ngôn ngữ khác.",
     bar: "bg-emerald-500",
   },
 ];
@@ -121,16 +121,16 @@ export default function DashboardPage() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Workspace overview
+                Tổng quan không gian làm việc
               </div>
 
               <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                Manage documents from one workspace
+                Quản lý tài liệu trong một không gian làm việc
               </h1>
 
               <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                Upload documents, track their processing status, and use them
-                for chat, summaries and translations.
+                Tải tài liệu lên, theo dõi trạng thái xử lý và sử dụng tài liệu
+                cho chat, tóm tắt và dịch thuật.
               </p>
             </div>
 
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                 href="/documents"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
               >
-                <span>Upload document</span>
+                <span>Tải tài liệu</span>
                 <span aria-hidden="true">→</span>
               </Link>
 
@@ -147,7 +147,7 @@ export default function DashboardPage() {
                 href="/workspaces"
                 className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
               >
-                View workspaces
+                Xem không gian làm việc
               </Link>
             </div>
           </div>
@@ -189,11 +189,11 @@ export default function DashboardPage() {
         <div className="space-y-6">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-              Quick actions
+              Thao tác nhanh
             </p>
 
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              Start a workflow
+              Bắt đầu quy trình
             </h2>
           </div>
 
@@ -241,16 +241,16 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                Pipeline
+                Quy trình
               </p>
 
               <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                Main flow
+                Luồng chính
               </h2>
             </div>
 
             <span className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
-              4 steps
+              4 bước
             </span>
           </div>
 
@@ -284,11 +284,11 @@ export default function DashboardPage() {
         <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-              Modules
+              Chức năng
             </p>
 
             <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-              Workspace tools
+              Công cụ làm việc
             </h2>
           </div>
 
@@ -296,7 +296,7 @@ export default function DashboardPage() {
             href="/documents"
             className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-700"
           >
-            Go to documents →
+            Đi tới tài liệu →
           </Link>
         </div>
 
@@ -320,7 +320,7 @@ export default function DashboardPage() {
               </p>
 
               <div className="mt-5 text-sm font-semibold text-slate-400 transition group-hover:text-indigo-600">
-                Open module →
+                Mở chức năng →
               </div>
             </Link>
           ))}

@@ -7,8 +7,20 @@ function getInitial(email?: string) {
   return email?.charAt(0).toUpperCase() || "U";
 }
 
+function getRoleLabel(role?: string | null) {
+  switch (role?.toUpperCase()) {
+    case "ADMIN":
+      return "Quản trị viên";
+    case "USER":
+      return "Người dùng";
+    default:
+      return role || "Người dùng";
+  }
+}
+
 export default function ProfilePage() {
   const user = getAuthUser();
+  const roleLabel = getRoleLabel(user?.role);
 
   return (
     <div className="space-y-8">
@@ -19,21 +31,21 @@ export default function ProfilePage() {
               href="/dashboard"
               className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
             >
-              ← Back to dashboard
+              ← Quay lại tổng quan
             </Link>
 
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Account
+              Tài khoản
             </div>
 
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              Profile
+              Hồ sơ
             </h1>
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Review the signed-in account used for this document assistant
-              workspace.
+              Xem thông tin tài khoản đang đăng nhập và quyền truy cập trong
+              hệ thống Document AI Assistant.
             </p>
           </div>
 
@@ -45,22 +57,22 @@ export default function ProfilePage() {
 
               <div className="min-w-0">
                 <p className="truncate text-lg font-semibold tracking-tight text-slate-950">
-                  {user?.email || "Unknown user"}
+                  {user?.email || "Không xác định"}
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Signed in account
+                  Tài khoản đang đăng nhập
                 </p>
               </div>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">
               <span className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-                {user?.role || "USER"}
+                {roleLabel}
               </span>
 
               <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                Active session
+                Phiên đang hoạt động
               </span>
             </div>
           </div>
@@ -70,16 +82,16 @@ export default function ProfilePage() {
       <section className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
         <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Summary
+            Tóm tắt
           </p>
 
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-            Account overview
+            Tổng quan tài khoản
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Basic account information stored in the current authenticated
-            session.
+            Thông tin cơ bản của tài khoản đang được lưu trong phiên đăng nhập
+            hiện tại.
           </p>
 
           <div className="mt-6 space-y-3">
@@ -94,19 +106,19 @@ export default function ProfilePage() {
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Role
+                Vai trò
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                {user?.role || "—"}
+                {roleLabel}
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Session source
+                Nguồn phiên đăng nhập
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                Local auth storage
+                Bộ nhớ xác thực cục bộ
               </p>
             </div>
           </div>
@@ -116,16 +128,16 @@ export default function ProfilePage() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                Workspace access
+                Quyền truy cập
               </p>
 
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                Available modules
+                Chức năng khả dụng
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Use the account to manage documents, chat sessions and generated
-                AI outputs.
+                Tài khoản này có thể quản lý tài liệu, phiên chat và các đầu ra
+                AI đã tạo.
               </p>
             </div>
 
@@ -133,30 +145,30 @@ export default function ProfilePage() {
               href="/settings"
               className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
             >
-              Open settings
+              Mở cài đặt
             </Link>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             {[
               {
-                title: "Documents",
-                description: "Upload and manage files for processing.",
+                title: "Tài liệu",
+                description: "Tải lên và quản lý tệp để xử lý.",
                 href: "/documents",
               },
               {
                 title: "Chat",
-                description: "Ask questions with grounded citations.",
+                description: "Đặt câu hỏi với trích dẫn có căn cứ.",
                 href: "/documents",
               },
               {
-                title: "Summaries",
-                description: "Create reusable summaries from documents.",
+                title: "Tóm tắt",
+                description: "Tạo bản tóm tắt có thể tái sử dụng từ tài liệu.",
                 href: "/summaries",
               },
               {
-                title: "Translations",
-                description: "Translate generated or extracted content.",
+                title: "Dịch thuật",
+                description: "Dịch nội dung đã tạo hoặc đã trích xuất.",
                 href: "/translations",
               },
             ].map((item) => (
@@ -176,7 +188,7 @@ export default function ProfilePage() {
                 </p>
 
                 <p className="mt-5 text-sm font-semibold text-slate-400 transition group-hover:text-indigo-600">
-                  Open module →
+                  Mở chức năng →
                 </p>
               </Link>
             ))}

@@ -15,25 +15,25 @@ type DocumentsToolbarProps = {
 };
 
 const STATUS_OPTIONS = [
-  { value: "ALL", label: "All statuses" },
-  { value: "UPLOADED", label: "Uploaded" },
-  { value: "PROCESSING", label: "Processing" },
-  { value: "EXTRACTED", label: "Extracted" },
-  { value: "CHUNKED", label: "Chunked" },
-  { value: "READY", label: "Ready" },
-  { value: "FAILED", label: "Failed" },
+  { value: "ALL", label: "Tất cả trạng thái" },
+  { value: "UPLOADED", label: "Đã tải lên" },
+  { value: "PROCESSING", label: "Đang xử lý" },
+  { value: "EXTRACTED", label: "Đã trích xuất" },
+  { value: "CHUNKED", label: "Đã chia đoạn" },
+  { value: "READY", label: "Sẵn sàng" },
+  { value: "FAILED", label: "Thất bại" },
 ];
 
 const SORT_BY_OPTIONS = [
-  { value: "createdAt", label: "Created date" },
-  { value: "updatedAt", label: "Updated date" },
-  { value: "title", label: "Title" },
-  { value: "status", label: "Status" },
+  { value: "createdAt", label: "Ngày tạo" },
+  { value: "updatedAt", label: "Ngày cập nhật" },
+  { value: "title", label: "Tiêu đề" },
+  { value: "status", label: "Trạng thái" },
 ] as const;
 
 const SORT_ORDER_OPTIONS = [
-  { value: "desc", label: "Newest first" },
-  { value: "asc", label: "Oldest first" },
+  { value: "desc", label: "Mới nhất trước" },
+  { value: "asc", label: "Cũ nhất trước" },
 ] as const;
 
 export default function DocumentsToolbar({
@@ -60,23 +60,23 @@ export default function DocumentsToolbar({
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Filters
+            Bộ lọc
           </p>
 
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            Find documents
+            Tìm tài liệu
           </h2>
 
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Search by title or filename, then narrow the list by status and
-            sort order.
+            Tìm theo tiêu đề hoặc tên tệp, sau đó lọc danh sách theo trạng thái
+            và kiểu sắp xếp.
           </p>
         </div>
 
         <div className="flex w-fit items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
           <span className="h-2 w-2 rounded-full bg-indigo-500" />
           <span>
-            {filteredCount}/{total} documents
+            {filteredCount}/{total} tài liệu
           </span>
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function DocumentsToolbar({
             htmlFor="documents-search"
             className="text-sm font-semibold text-slate-700"
           >
-            Keyword
+            Từ khóa
           </label>
 
           <input
@@ -95,7 +95,7 @@ export default function DocumentsToolbar({
             type="text"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Search title or filename"
+            placeholder="Tìm theo tiêu đề hoặc tên tệp"
             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
           />
         </div>
@@ -105,7 +105,7 @@ export default function DocumentsToolbar({
             htmlFor="documents-status"
             className="text-sm font-semibold text-slate-700"
           >
-            Status
+            Trạng thái
           </label>
 
           <select
@@ -127,7 +127,7 @@ export default function DocumentsToolbar({
             htmlFor="documents-sort-by"
             className="text-sm font-semibold text-slate-700"
           >
-            Sort by
+            Sắp xếp theo
           </label>
 
           <select
@@ -157,7 +157,7 @@ export default function DocumentsToolbar({
             htmlFor="documents-sort-order"
             className="text-sm font-semibold text-slate-700"
           >
-            Order
+            Thứ tự
           </label>
 
           <select
@@ -183,7 +183,7 @@ export default function DocumentsToolbar({
             disabled={!hasActiveFilters}
             className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
           >
-            Reset
+            Đặt lại
           </button>
         </div>
       </div>

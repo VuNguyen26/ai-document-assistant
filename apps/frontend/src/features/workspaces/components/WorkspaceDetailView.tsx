@@ -53,6 +53,35 @@ function getStatusStyle(status: string) {
   }
 }
 
+function getStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Đã tải lên";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "VALIDATING":
+      return "Đang kiểm tra";
+    case "EXTRACTING":
+      return "Đang trích xuất";
+    case "EXTRACTED":
+      return "Đã trích xuất";
+    case "CHUNKING":
+      return "Đang chia đoạn";
+    case "CHUNKED":
+      return "Đã chia đoạn";
+    case "EMBEDDING":
+      return "Đang tạo embedding";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
+    default:
+      return status;
+  }
+}
+
 export default function WorkspaceDetailView({
   workspaceId,
 }: WorkspaceDetailViewProps) {
@@ -95,7 +124,9 @@ export default function WorkspaceDetailView({
       await Promise.all([loadWorkspace(), loadDocuments()]);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load workspace.",
+        error instanceof Error
+          ? error.message
+          : "Không thể tải không gian làm việc.",
       );
     } finally {
       setLoading(false);
@@ -115,7 +146,7 @@ export default function WorkspaceDetailView({
 
   async function handleSaveMeta() {
     if (!name.trim()) {
-      toast.error("Workspace name is required.");
+      toast.error("Vui lòng nhập tên không gian làm việc.");
       return;
     }
 
@@ -128,10 +159,12 @@ export default function WorkspaceDetailView({
       });
 
       setWorkspace(updated);
-      toast.success("Workspace updated.");
+      toast.success("Đã cập nhật không gian làm việc.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot update workspace.",
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật không gian làm việc.",
       );
     } finally {
       setSavingMeta(false);
@@ -140,7 +173,7 @@ export default function WorkspaceDetailView({
 
   async function handleAddDocument() {
     if (!documentIdToAdd) {
-      toast.error("Please select a document first.");
+      toast.error("Vui lòng chọn tài liệu trước.");
       return;
     }
 
@@ -153,12 +186,12 @@ export default function WorkspaceDetailView({
 
       setWorkspace(updated);
       setDocumentIdToAdd("");
-      toast.success("Document added to workspace.");
+      toast.success("Đã thêm tài liệu vào không gian làm việc.");
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Cannot add document to workspace.",
+          : "Không thể thêm tài liệu vào không gian làm việc.",
       );
     } finally {
       setAddingDocument(false);
@@ -178,10 +211,10 @@ export default function WorkspaceDetailView({
 
       setWorkspace(updated);
       setRemoveTarget(null);
-      toast.success("Document removed from workspace.");
+      toast.success("Đã gỡ tài liệu khỏi không gian làm việc.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot remove document.",
+        error instanceof Error ? error.message : "Không thể gỡ tài liệu.",
       );
     } finally {
       setIsRemoving(false);
@@ -211,18 +244,18 @@ export default function WorkspaceDetailView({
         <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-rose-500" />
 
         <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
-          Workspace not found
+          Không tìm thấy không gian làm việc
         </h1>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          This workspace does not exist or you do not have access.
+          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy cập.
         </p>
 
         <Link
           href="/workspaces"
           className="mt-6 inline-flex rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
         >
-          Back to workspaces
+          Quay lại danh sách không gian
         </Link>
       </div>
     );
@@ -240,20 +273,20 @@ export default function WorkspaceDetailView({
                     href="/workspaces"
                     className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                   >
-                    ← Back to workspaces
+                    ← Quay lại không gian
                   </Link>
 
                   <Link
                     href="/dashboard"
                     className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                   >
-                    Dashboard
+                    Tổng quan
                   </Link>
                 </div>
 
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Workspace detail
+                  Chi tiết không gian làm việc
                 </div>
 
                 <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
@@ -262,7 +295,7 @@ export default function WorkspaceDetailView({
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
                   {workspace.description ||
-                    "Manage metadata and documents linked to this workspace."}
+                    "Quản lý thông tin và các tài liệu được liên kết với không gian làm việc này."}
                 </p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
@@ -270,7 +303,7 @@ export default function WorkspaceDetailView({
                     href={`/workspaces/${workspaceId}/chat`}
                     className="inline-flex items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
                   >
-                    Chat workspace
+                    Chat với không gian
                   </Link>
 
                   <button
@@ -283,7 +316,7 @@ export default function WorkspaceDetailView({
                     }}
                     className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                   >
-                    View documents
+                    Xem tài liệu
                   </button>
                 </div>
               </div>
@@ -303,11 +336,11 @@ export default function WorkspaceDetailView({
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Documents
+                  Tài liệu
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Linked files
+                  Tệp đã liên kết
                 </p>
               </div>
 
@@ -324,11 +357,11 @@ export default function WorkspaceDetailView({
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Ready
+                  Sẵn sàng
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Available for chat
+                  Có thể dùng để chat
                 </p>
               </div>
 
@@ -345,11 +378,11 @@ export default function WorkspaceDetailView({
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Incomplete
+                  Chưa hoàn tất
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Needs processing
+                  Cần xử lý thêm
                 </p>
               </div>
             </div>
@@ -361,15 +394,15 @@ export default function WorkspaceDetailView({
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Metadata
+                  Thông tin
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                  Workspace information
+                  Thông tin không gian
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Update the name and description shown across the workspace.
+                  Cập nhật tên và mô tả hiển thị trong không gian làm việc.
                 </p>
               </div>
 
@@ -379,7 +412,7 @@ export default function WorkspaceDetailView({
                     htmlFor="workspace-detail-name"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Name
+                    Tên
                   </label>
 
                   <input
@@ -395,7 +428,7 @@ export default function WorkspaceDetailView({
                     htmlFor="workspace-detail-description"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Description
+                    Mô tả
                   </label>
 
                   <textarea
@@ -413,11 +446,11 @@ export default function WorkspaceDetailView({
                   disabled={savingMeta}
                   className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  {savingMeta ? "Saving..." : "Save changes"}
+                  {savingMeta ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
 
                 <p className="text-xs text-slate-400">
-                  Updated{" "}
+                  Cập nhật{" "}
                   <span className="font-medium text-slate-600">
                     {formatDate(workspace.updatedAt)}
                   </span>
@@ -428,28 +461,29 @@ export default function WorkspaceDetailView({
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Documents
+                  Tài liệu
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                  Add document
+                  Thêm tài liệu
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Link an existing document to this workspace.
+                  Liên kết một tài liệu hiện có vào không gian làm việc này.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <select
+                  aria-label="Chọn tài liệu để thêm vào không gian làm việc"
                   value={documentIdToAdd}
                   onChange={(event) => setDocumentIdToAdd(event.target.value)}
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                 >
-                  <option value="">Select document...</option>
+                  <option value="">Chọn tài liệu...</option>
                   {availableDocuments.map((doc) => (
                     <option key={doc.id} value={doc.id}>
-                      {doc.title} — {doc.status}
+                      {doc.title} — {getStatusLabel(doc.status)}
                     </option>
                   ))}
                 </select>
@@ -460,13 +494,13 @@ export default function WorkspaceDetailView({
                   disabled={addingDocument || !documentIdToAdd}
                   className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
                 >
-                  {addingDocument ? "Adding..." : "Add document"}
+                  {addingDocument ? "Đang thêm..." : "Thêm tài liệu"}
                 </button>
 
                 {availableDocuments.length === 0 ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-500">
-                    All available documents are already linked to this
-                    workspace.
+                    Tất cả tài liệu khả dụng đã được liên kết với không gian làm
+                    việc này.
                   </div>
                 ) : null}
               </div>
@@ -480,16 +514,16 @@ export default function WorkspaceDetailView({
             <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Library
+                  Thư viện
                 </p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Documents in workspace
+                  Tài liệu trong không gian
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Review linked documents, open individual details or start a
-                  focused document chat.
+                  Xem tài liệu đã liên kết, mở chi tiết từng tài liệu hoặc bắt
+                  đầu chat tập trung theo từng tài liệu.
                 </p>
               </div>
 
@@ -497,7 +531,7 @@ export default function WorkspaceDetailView({
                 href={`/workspaces/${workspaceId}/chat`}
                 className="inline-flex h-11 items-center justify-center rounded-2xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
               >
-                Chat workspace
+                Chat với không gian
               </Link>
             </div>
 
@@ -506,12 +540,12 @@ export default function WorkspaceDetailView({
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
                 <p className="text-sm font-semibold text-slate-800">
-                  No documents linked
+                  Chưa có tài liệu liên kết
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Add a document from the panel on the left to start using this
-                  workspace.
+                  Hãy thêm tài liệu từ khung bên trái để bắt đầu sử dụng không
+                  gian làm việc này.
                 </p>
               </div>
             ) : (
@@ -524,7 +558,7 @@ export default function WorkspaceDetailView({
                     <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                       <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                          Document
+                          Tài liệu
                         </p>
 
                         <h3 className="mt-2 truncate text-lg font-semibold tracking-tight text-slate-950">
@@ -541,7 +575,7 @@ export default function WorkspaceDetailView({
                               doc.status,
                             )}`}
                           >
-                            {doc.status}
+                            {getStatusLabel(doc.status)}
                           </span>
 
                           {doc.sourceLanguage ? (
@@ -551,7 +585,7 @@ export default function WorkspaceDetailView({
                           ) : null}
 
                           <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                            Updated {formatDate(doc.updatedAt)}
+                            Cập nhật {formatDate(doc.updatedAt)}
                           </span>
                         </div>
                       </div>
@@ -561,7 +595,7 @@ export default function WorkspaceDetailView({
                           href={`/documents/${doc.id}`}
                           className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                         >
-                          Detail
+                          Chi tiết
                         </Link>
 
                         {doc.status === "READY" ? (
@@ -583,7 +617,7 @@ export default function WorkspaceDetailView({
                           }
                           className="rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                         >
-                          Remove
+                          Gỡ
                         </button>
                       </div>
                     </div>
@@ -597,10 +631,12 @@ export default function WorkspaceDetailView({
 
       <ConfirmDialog
         open={Boolean(removeTarget)}
-        title="Remove document?"
-        description={`Document "${removeTarget?.title || ""}" will be removed from this workspace.`}
-        confirmText={isRemoving ? "Removing..." : "Remove document"}
-        cancelText="Cancel"
+        title="Gỡ tài liệu?"
+        description={`Tài liệu "${
+          removeTarget?.title || ""
+        }" sẽ bị gỡ khỏi không gian làm việc này.`}
+        confirmText={isRemoving ? "Đang gỡ..." : "Gỡ tài liệu"}
+        cancelText="Hủy"
         tone="danger"
         loading={isRemoving}
         onCancel={() => {

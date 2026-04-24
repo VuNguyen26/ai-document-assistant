@@ -19,8 +19,8 @@ const PAGE_SIZE = 12;
 const SUMMARY_CARDS = [
   {
     key: "total",
-    label: "Total",
-    description: "All files",
+    label: "Tổng số",
+    description: "Tất cả tệp",
     badge: "DOC",
     valueClassName: "text-slate-950",
     badgeClassName: "bg-indigo-50 text-indigo-700 ring-indigo-100",
@@ -28,8 +28,8 @@ const SUMMARY_CARDS = [
   },
   {
     key: "ready",
-    label: "Ready",
-    description: "Available for chat",
+    label: "Sẵn sàng",
+    description: "Có thể dùng để chat",
     badge: "RDY",
     valueClassName: "text-emerald-600",
     badgeClassName: "bg-emerald-50 text-emerald-700 ring-emerald-100",
@@ -37,8 +37,8 @@ const SUMMARY_CARDS = [
   },
   {
     key: "incomplete",
-    label: "Incomplete",
-    description: "Still processing",
+    label: "Chưa hoàn tất",
+    description: "Đang xử lý",
     badge: "WIP",
     valueClassName: "text-amber-600",
     badgeClassName: "bg-amber-50 text-amber-700 ring-amber-100",
@@ -46,8 +46,8 @@ const SUMMARY_CARDS = [
   },
   {
     key: "failed",
-    label: "Failed",
-    description: "Needs review",
+    label: "Thất bại",
+    description: "Cần kiểm tra",
     badge: "ERR",
     valueClassName: "text-rose-600",
     badgeClassName: "bg-rose-50 text-rose-700 ring-rose-100",
@@ -190,21 +190,21 @@ export default function DocumentsPageView() {
                   href="/dashboard"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Back to dashboard
+                  ← Quay lại tổng quan
                 </Link>
 
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Document library
+                  Thư viện tài liệu
                 </div>
 
                 <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                  Manage uploaded documents
+                  Quản lý tài liệu đã tải lên
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                  Upload files, review processing status, and prepare documents
-                  for search, chat, summaries and translations.
+                  Tải tệp lên, xem trạng thái xử lý và chuẩn bị tài liệu cho tìm
+                  kiếm, chat, tóm tắt và dịch thuật.
                 </p>
               </div>
             </div>
@@ -270,19 +270,19 @@ export default function DocumentsPageView() {
               <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                    Library
+                    Thư viện
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                    Document list
+                    Danh sách tài liệu
                   </h2>
                 </div>
 
                 <p className="text-sm text-slate-500">
-                  Page{" "}
+                  Trang{" "}
                   <span className="font-semibold text-slate-800">
                     {pagination.page}
                   </span>{" "}
-                  of{" "}
+                  /{" "}
                   <span className="font-semibold text-slate-800">
                     {pagination.totalPages}
                   </span>
@@ -311,7 +311,7 @@ export default function DocumentsPageView() {
                       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
                         {hasFilters
                           ? "Hãy thử đổi từ khóa, trạng thái hoặc kiểu sắp xếp."
-                          : "Bạn có thể upload tài liệu đầu tiên để bắt đầu."}
+                          : "Bạn có thể tải tài liệu đầu tiên lên để bắt đầu."}
                       </p>
 
                       {hasFilters ? (
@@ -320,7 +320,7 @@ export default function DocumentsPageView() {
                           onClick={handleResetFilters}
                           className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                         >
-                          Reset filters
+                          Xóa bộ lọc
                         </button>
                       ) : null}
                     </div>
@@ -338,15 +338,15 @@ export default function DocumentsPageView() {
 
                       <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
                         <p className="text-sm text-slate-500">
-                          Showing{" "}
+                          Đang hiển thị{" "}
                           <span className="font-semibold text-slate-800">
                             {documents.length}
                           </span>{" "}
-                          of{" "}
+                          /{" "}
                           <span className="font-semibold text-slate-800">
                             {pagination.total}
                           </span>{" "}
-                          documents
+                          tài liệu
                         </p>
 
                         <div className="flex gap-2">
@@ -358,7 +358,7 @@ export default function DocumentsPageView() {
                             disabled={pagination.page <= 1}
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Previous
+                            Trước
                           </button>
 
                           <button
@@ -371,7 +371,7 @@ export default function DocumentsPageView() {
                             disabled={pagination.page >= pagination.totalPages}
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Next
+                            Sau
                           </button>
                         </div>
                       </div>
@@ -398,11 +398,11 @@ export default function DocumentsPageView() {
 
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                Status guide
+                Hướng dẫn trạng thái
               </p>
 
               <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                Processing states
+                Trạng thái xử lý
               </h2>
 
               <div className="mt-5 space-y-4">
@@ -410,10 +410,10 @@ export default function DocumentsPageView() {
                   <span className="mt-2 h-2.5 w-2.5 rounded-full bg-emerald-500" />
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      Ready
+                      Sẵn sàng
                     </p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      The document can be used for search and chat.
+                      Tài liệu có thể dùng cho tìm kiếm và chat.
                     </p>
                   </div>
                 </div>
@@ -422,10 +422,11 @@ export default function DocumentsPageView() {
                   <span className="mt-2 h-2.5 w-2.5 rounded-full bg-amber-500" />
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      Incomplete
+                      Chưa hoàn tất
                     </p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Extraction, chunking or embedding is still pending.
+                      Hệ thống vẫn đang trích xuất, chia nhỏ nội dung hoặc tạo
+                      embedding.
                     </p>
                   </div>
                 </div>
@@ -434,10 +435,10 @@ export default function DocumentsPageView() {
                   <span className="mt-2 h-2.5 w-2.5 rounded-full bg-rose-500" />
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      Failed
+                      Thất bại
                     </p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      The file needs to be reviewed or uploaded again.
+                      Tệp cần được kiểm tra lại hoặc tải lên lại.
                     </p>
                   </div>
                 </div>
@@ -452,8 +453,8 @@ export default function DocumentsPageView() {
         title="Xóa tài liệu?"
         description={
           deleteTarget
-            ? `Tài liệu "${deleteTarget.title}" sẽ bị xóa khỏi workspace.`
-            : "Tài liệu này sẽ bị xóa khỏi workspace."
+            ? `Tài liệu "${deleteTarget.title}" sẽ bị xóa khỏi không gian làm việc.`
+            : "Tài liệu này sẽ bị xóa khỏi không gian làm việc."
         }
         confirmText={isDeleting ? "Đang xóa..." : "Xóa tài liệu"}
         cancelText="Hủy"

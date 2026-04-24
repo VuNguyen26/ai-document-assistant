@@ -79,13 +79,13 @@ function statusClass(status: string) {
 function statusLabel(status: string) {
   switch (status) {
     case "UPLOADED":
-      return "Đã upload";
+      return "Đã tải lên";
     case "PROCESSING":
       return "Đang xử lý";
     case "EXTRACTED":
-      return "Đã extract";
+      return "Đã trích xuất";
     case "CHUNKED":
-      return "Đã chunk";
+      return "Đã chia đoạn";
     case "READY":
       return "Sẵn sàng";
     case "FAILED":
@@ -178,44 +178,44 @@ function getRecommendedAction(status: string) {
   switch (status) {
     case "UPLOADED":
       return {
-        title: "Khuyến nghị: chạy Extract",
+        title: "Khuyến nghị: chạy trích xuất",
         description:
-          "Tài liệu mới chỉ được upload. Bước đúng tiếp theo là extract nội dung text từ file gốc.",
+          "Tài liệu mới chỉ được tải lên. Bước tiếp theo là trích xuất nội dung văn bản từ tệp gốc.",
         tone: "amber" as const,
       };
     case "EXTRACTED":
       return {
-        title: "Khuyến nghị: chạy Chunk",
+        title: "Khuyến nghị: chạy chia đoạn",
         description:
-          "Tài liệu đã có text, nhưng chưa chia nhỏ để retrieval. Hãy chạy chunk trước khi embed.",
+          "Tài liệu đã có nội dung văn bản, nhưng chưa được chia thành các đoạn nhỏ để truy xuất. Hãy chạy bước chia đoạn trước khi tạo embedding.",
         tone: "sky" as const,
       };
     case "CHUNKED":
       return {
-        title: "Khuyến nghị: chạy Embed",
+        title: "Khuyến nghị: tạo embedding",
         description:
-          "Document đã có chunks. Bước tiếp theo là tạo embeddings để semantic search và chat hoạt động.",
+          "Tài liệu đã có các đoạn nội dung. Bước tiếp theo là tạo embedding để tìm kiếm ngữ nghĩa và chat hoạt động.",
         tone: "indigo" as const,
       };
     case "FAILED":
       return {
-        title: "Khuyến nghị: Reprocess từ đầu",
+        title: "Khuyến nghị: xử lý lại từ đầu",
         description:
-          "Pipeline trước đó đã lỗi. Nên reprocess để xóa dữ liệu cũ và chạy lại toàn bộ luồng xử lý.",
+          "Quy trình trước đó đã lỗi. Nên xử lý lại để xóa dữ liệu cũ và chạy lại toàn bộ luồng xử lý.",
         tone: "rose" as const,
       };
     case "PROCESSING":
       return {
         title: "Tài liệu đang được xử lý",
         description:
-          "Hệ thống đang chạy pipeline. Hiện chưa nên bấm thêm các bước manual.",
+          "Hệ thống đang chạy quy trình xử lý. Hiện tại chưa nên bấm thêm các bước thủ công.",
         tone: "blue" as const,
       };
     case "READY":
       return {
-        title: "Khuyến nghị: Chat với tài liệu",
+        title: "Khuyến nghị: chat với tài liệu",
         description:
-          "Document đã sẵn sàng. Bạn có thể bắt đầu chat hoặc reprocess nếu muốn xử lý lại từ đầu.",
+          "Tài liệu đã sẵn sàng. Bạn có thể bắt đầu chat hoặc xử lý lại nếu muốn chạy lại từ đầu.",
         tone: "emerald" as const,
       };
     default:
@@ -254,7 +254,7 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Không thể copy vào clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
@@ -323,23 +323,23 @@ export default function DocumentDetailView({
       } else if (type === "reprocess") {
         const result = await reprocessDocument(documentId);
         toast.success(
-          result.message || "Đã đưa tài liệu vào hàng đợi reprocess.",
+          result.message || "Đã đưa tài liệu vào hàng đợi xử lý lại.",
         );
       } else if (type === "extract") {
         await extractDocument(documentId);
-        toast.success("Extract thành công.");
+        toast.success("Trích xuất nội dung thành công.");
       } else if (type === "chunk") {
         await chunkDocument(documentId);
-        toast.success("Chunk thành công.");
+        toast.success("Chia đoạn thành công.");
       } else {
         await embedDocument(documentId);
-        toast.success("Embed thành công.");
+        toast.success("Tạo embedding thành công.");
       }
 
       await loadDocument();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Thao tác pipeline thất bại.";
+        err instanceof Error ? err.message : "Thao tác xử lý tài liệu thất bại.";
       setError(message);
       toast.error(message);
     } finally {
@@ -405,9 +405,9 @@ export default function DocumentDetailView({
   const recommendedAction = getRecommendedAction(document?.status ?? "UPLOADED");
 
   const tabs = [
-    { key: "overview" as const, label: "Overview" },
-    { key: "content" as const, label: "Content" },
-    { key: "chunks" as const, label: "Chunks" },
+    { key: "overview" as const, label: "Tổng quan" },
+    { key: "content" as const, label: "Nội dung" },
+    { key: "chunks" as const, label: "Đoạn nội dung" },
   ];
 
   if (loading) {
@@ -437,7 +437,7 @@ export default function DocumentDetailView({
             onClick={() => router.push("/documents")}
             className="mt-6 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white"
           >
-            Quay lại Documents
+            Quay lại tài liệu
           </button>
         </div>
       </div>
@@ -456,11 +456,11 @@ export default function DocumentDetailView({
                   onClick={() => router.push("/documents")}
                   className="mb-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
                 >
-                  ← Quay lại Documents
+                  ← Quay lại tài liệu
                 </button>
 
                 <p className="text-sm font-medium text-slate-500">
-                  Document Detail
+                  Chi tiết tài liệu
                 </p>
                 <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
                   {document.title}
@@ -481,7 +481,7 @@ export default function DocumentDetailView({
                     ? "Đã sẵn sàng"
                     : actionLoading === "process"
                       ? "Đang xử lý..."
-                      : "Process document"}
+                      : "Xử lý tài liệu"}
                 </button>
 
                 <button
@@ -491,8 +491,8 @@ export default function DocumentDetailView({
                   className="rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {actionLoading === "reprocess"
-                    ? "Đang reprocess..."
-                    : "Reprocess từ đầu"}
+                    ? "Đang xử lý lại..."
+                    : "Xử lý lại từ đầu"}
                 </button>
 
                 <button
@@ -501,7 +501,9 @@ export default function DocumentDetailView({
                   disabled={!canExtract}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {actionLoading === "extract" ? "Đang extract..." : "Extract"}
+                  {actionLoading === "extract"
+                    ? "Đang trích xuất..."
+                    : "Trích xuất"}
                 </button>
 
                 <button
@@ -510,7 +512,7 @@ export default function DocumentDetailView({
                   disabled={!canChunk}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {actionLoading === "chunk" ? "Đang chunk..." : "Chunk"}
+                  {actionLoading === "chunk" ? "Đang chia đoạn..." : "Chia đoạn"}
                 </button>
 
                 <button
@@ -519,7 +521,9 @@ export default function DocumentDetailView({
                   disabled={!canEmbed}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {actionLoading === "embed" ? "Đang embed..." : "Embed"}
+                  {actionLoading === "embed"
+                    ? "Đang tạo embedding..."
+                    : "Tạo embedding"}
                 </button>
 
                 <button
@@ -552,18 +556,19 @@ export default function DocumentDetailView({
                 </span>
 
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                  {chunks.length} chunks
+                  {chunks.length} đoạn
                 </span>
               </div>
 
               {!isReady ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  Bạn có thể bấm <strong>Process document</strong> để hệ thống tự
-                  chạy đủ 3 bước: Extract → Chunk → Embed.
+                  Bạn có thể bấm <strong>Xử lý tài liệu</strong> để hệ thống tự
+                  chạy đủ 3 bước: Trích xuất → Chia đoạn → Tạo embedding.
                 </div>
               ) : (
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  Document đã ở trạng thái <strong>READY</strong> và có thể chat.
+                  Tài liệu đã ở trạng thái <strong>Sẵn sàng</strong> và có thể
+                  chat.
                 </div>
               )}
             </div>
@@ -578,8 +583,9 @@ export default function DocumentDetailView({
             </div>
 
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <strong>Reprocess từ đầu</strong> sẽ xóa extracted content, chunks và
-              embeddings hiện tại rồi chạy lại toàn bộ pipeline.
+              <strong>Xử lý lại từ đầu</strong> sẽ xóa nội dung đã trích xuất,
+              các đoạn nội dung và embedding hiện tại, sau đó chạy lại toàn bộ
+              quy trình xử lý.
             </div>
 
             {error ? (
@@ -628,14 +634,14 @@ export default function DocumentDetailView({
                       Tổng quan tài liệu
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      Metadata và trạng thái hiện tại của document.
+                      Metadata và trạng thái hiện tại của tài liệu.
                     </p>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="rounded-2xl bg-slate-50 p-4">
                       <p className="text-xs uppercase tracking-wide text-slate-400">
-                        MIME Type
+                        Loại MIME
                       </p>
                       <p className="mt-2 break-words text-sm font-medium text-slate-700">
                         {document.mimeType}
@@ -698,28 +704,29 @@ export default function DocumentDetailView({
                 <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                   <div className="mb-5">
                     <h2 className="text-lg font-semibold text-slate-900">
-                      Pipeline trạng thái
+                      Trạng thái quy trình
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      READY chỉ xuất hiện sau khi embed thành công.
+                      Trạng thái sẵn sàng chỉ xuất hiện sau khi tạo embedding
+                      thành công.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     {[
                       {
-                        title: "1. Extract",
-                        desc: "Trích xuất nội dung text từ file gốc.",
+                        title: "1. Trích xuất",
+                        desc: "Trích xuất nội dung văn bản từ tệp gốc.",
                         active: hasExtractedText,
                       },
                       {
-                        title: "2. Chunk",
-                        desc: "Chia document thành các chunk để retrieval.",
+                        title: "2. Chia đoạn",
+                        desc: "Chia tài liệu thành các đoạn nhỏ để truy xuất.",
                         active: hasChunks,
                       },
                       {
-                        title: "3. Embed",
-                        desc: "Sinh vector embedding để semantic search và chat.",
+                        title: "3. Tạo embedding",
+                        desc: "Sinh vector embedding để tìm kiếm ngữ nghĩa và chat.",
                         active: isReady,
                       },
                     ].map((step) => (
@@ -747,7 +754,7 @@ export default function DocumentDetailView({
                                 : "bg-white text-slate-500"
                             }`}
                           >
-                            {step.active ? "Done" : "Pending"}
+                            {step.active ? "Hoàn tất" : "Đang chờ"}
                           </span>
                         </div>
                       </div>
@@ -756,7 +763,7 @@ export default function DocumentDetailView({
 
                   <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Chunk count
+                      Số đoạn
                     </p>
                     <p className="mt-2 text-2xl font-semibold text-slate-900">
                       {chunks.length}
@@ -772,7 +779,7 @@ export default function DocumentDetailView({
               <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Extracted Content
+                    Nội dung đã trích xuất
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Nội dung văn bản đã được hệ thống trích xuất từ tài liệu.
@@ -782,7 +789,7 @@ export default function DocumentDetailView({
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <input
                     type="text"
-                    aria-label="Tìm trong extracted content"
+                    aria-label="Tìm trong nội dung đã trích xuất"
                     value={contentSearch}
                     onChange={(e) => setContentSearch(e.target.value)}
                     placeholder="Tìm trong nội dung..."
@@ -793,11 +800,14 @@ export default function DocumentDetailView({
                     <button
                       type="button"
                       onClick={() =>
-                        void copyToClipboard(extractedText, "Đã copy extracted content.")
+                        void copyToClipboard(
+                          extractedText,
+                          "Đã sao chép nội dung đã trích xuất.",
+                        )
                       }
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                     >
-                      Copy content
+                      Sao chép nội dung
                     </button>
                   ) : null}
                 </div>
@@ -805,7 +815,8 @@ export default function DocumentDetailView({
 
               {contentQuery ? (
                 <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Tìm thấy <strong>{contentMatchCount}</strong> kết quả trong content.
+                  Tìm thấy <strong>{contentMatchCount}</strong> kết quả trong
+                  nội dung.
                 </div>
               ) : null}
 
@@ -821,10 +832,13 @@ export default function DocumentDetailView({
                               className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                             >
                               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                Match #{index + 1}
+                                Kết quả #{index + 1}
                               </div>
                               <p className="text-sm leading-6 text-slate-700">
-                                {renderHighlightedText(snippet.text, contentQuery)}
+                                {renderHighlightedText(
+                                  snippet.text,
+                                  contentQuery,
+                                )}
                               </p>
                             </div>
                           ))}
@@ -832,7 +846,7 @@ export default function DocumentDetailView({
                       ) : (
                         <div className="mb-6 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
                           <p className="text-sm font-medium text-slate-700">
-                            Không tìm thấy từ khóa trong content
+                            Không tìm thấy từ khóa trong nội dung
                           </p>
                           <p className="mt-2 text-sm text-slate-500">
                             Hãy thử từ khóa khác.
@@ -854,10 +868,10 @@ export default function DocumentDetailView({
                     📄
                   </div>
                   <p className="text-sm font-medium text-slate-700">
-                    Chưa có extracted text
+                    Chưa có nội dung đã trích xuất
                   </p>
                   <p className="mt-2 text-sm text-slate-500">
-                    Hãy chạy bước Extract hoặc Process document.
+                    Hãy chạy bước Trích xuất hoặc Xử lý tài liệu.
                   </p>
                 </div>
               )}
@@ -868,25 +882,28 @@ export default function DocumentDetailView({
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-slate-900">Chunks</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">
+                    Đoạn nội dung
+                  </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Các chunk hiện có dùng cho retrieval và chat grounded.
+                    Các đoạn nội dung hiện có dùng cho truy xuất và chat có căn
+                    cứ.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="text"
-                    aria-label="Tìm trong document chunks"
+                    aria-label="Tìm trong các đoạn nội dung"
                     value={chunkSearch}
                     onChange={(e) => setChunkSearch(e.target.value)}
-                    placeholder="Tìm trong chunks..."
+                    placeholder="Tìm trong đoạn nội dung..."
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition focus:border-slate-400 sm:w-72"
                   />
 
                   {hasChunks ? (
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                      {filteredChunks.length}/{chunks.length} chunk(s)
+                      {filteredChunks.length}/{chunks.length} đoạn
                     </span>
                   ) : null}
                 </div>
@@ -903,7 +920,7 @@ export default function DocumentDetailView({
                         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center gap-2">
                             <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                              Chunk #{chunk.chunkIndex}
+                              Đoạn #{chunk.chunkIndex}
                             </span>
                             <span className="text-xs text-slate-500">
                               {chunk.charCount} ký tự
@@ -915,12 +932,12 @@ export default function DocumentDetailView({
                             onClick={() =>
                               void copyToClipboard(
                                 chunk.content,
-                                `Đã copy chunk #${chunk.chunkIndex}.`,
+                                `Đã sao chép đoạn #${chunk.chunkIndex}.`,
                               )
                             }
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                           >
-                            Copy chunk
+                            Sao chép đoạn
                           </button>
                         </div>
 
@@ -929,8 +946,8 @@ export default function DocumentDetailView({
                         </p>
 
                         <div className="mt-3 flex gap-3 text-xs text-slate-400">
-                          <span>start: {chunk.startOffset ?? "-"}</span>
-                          <span>end: {chunk.endOffset ?? "-"}</span>
+                          <span>Bắt đầu: {chunk.startOffset ?? "-"}</span>
+                          <span>Kết thúc: {chunk.endOffset ?? "-"}</span>
                         </div>
                       </div>
                     ))}
@@ -941,7 +958,7 @@ export default function DocumentDetailView({
                       🔎
                     </div>
                     <p className="text-sm font-medium text-slate-700">
-                      Không có chunk nào khớp từ khóa
+                      Không có đoạn nào khớp từ khóa
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
                       Hãy thử từ khóa khác hoặc xóa bộ lọc hiện tại.
@@ -954,10 +971,10 @@ export default function DocumentDetailView({
                     ✂️
                   </div>
                   <p className="text-sm font-medium text-slate-700">
-                    Chưa có chunk nào
+                    Chưa có đoạn nội dung nào
                   </p>
                   <p className="mt-2 text-sm text-slate-500">
-                    Hãy chạy bước Chunk hoặc Process document.
+                    Hãy chạy bước Chia đoạn hoặc Xử lý tài liệu.
                   </p>
                 </div>
               )}
@@ -968,9 +985,13 @@ export default function DocumentDetailView({
 
       <ConfirmDialog
         open={reprocessDialogOpen}
-        title="Reprocess tài liệu từ đầu?"
-        description="Hành động này sẽ xóa extracted content, chunks và embeddings hiện tại rồi chạy lại toàn bộ pipeline. Chỉ dùng khi bạn thật sự muốn xử lý lại tài liệu."
-        confirmText={actionLoading === "reprocess" ? "Đang reprocess..." : "Reprocess từ đầu"}
+        title="Xử lý lại tài liệu từ đầu?"
+        description="Hành động này sẽ xóa nội dung đã trích xuất, các đoạn nội dung và embedding hiện tại, sau đó chạy lại toàn bộ quy trình xử lý. Chỉ dùng khi bạn thật sự muốn xử lý lại tài liệu."
+        confirmText={
+          actionLoading === "reprocess"
+            ? "Đang xử lý lại..."
+            : "Xử lý lại từ đầu"
+        }
         cancelText="Hủy"
         tone="danger"
         loading={actionLoading === "reprocess"}

@@ -21,11 +21,11 @@ import type {
 const PAGE_SIZE = 10;
 
 const SUMMARY_TYPE_OPTIONS: Array<{ value: SummaryType; label: string }> = [
-  { value: "SHORT", label: "Short" },
-  { value: "DETAILED", label: "Detailed" },
-  { value: "BULLET", label: "Bullet points" },
-  { value: "BEGINNER", label: "Beginner friendly" },
-  { value: "PRESENTATION", label: "Presentation" },
+  { value: "SHORT", label: "Ngắn gọn" },
+  { value: "DETAILED", label: "Chi tiết" },
+  { value: "BULLET", label: "Gạch đầu dòng" },
+  { value: "BEGINNER", label: "Dễ hiểu cho người mới" },
+  { value: "PRESENTATION", label: "Dạng thuyết trình" },
 ];
 
 function formatDate(value: string) {
@@ -45,6 +45,35 @@ function getSummaryTypeLabel(type: SummaryType) {
   );
 }
 
+function getDocumentStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Đã tải lên";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "VALIDATING":
+      return "Đang kiểm tra";
+    case "EXTRACTING":
+      return "Đang trích xuất";
+    case "EXTRACTED":
+      return "Đã trích xuất";
+    case "CHUNKING":
+      return "Đang chia đoạn";
+    case "CHUNKED":
+      return "Đã chia đoạn";
+    case "EMBEDDING":
+      return "Đang tạo embedding";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
+    default:
+      return status;
+  }
+}
+
 function truncateText(value: string, maxLength = 520) {
   const clean = value.replace(/\s+/g, " ").trim();
 
@@ -58,7 +87,7 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Cannot copy to clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
@@ -97,7 +126,7 @@ export default function SummariesPageView() {
       setDocuments(data.items);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load documents.",
+        error instanceof Error ? error.message : "Không thể tải tài liệu.",
       );
     }
   }
@@ -119,7 +148,7 @@ export default function SummariesPageView() {
       setPagination(data.pagination);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load summaries.",
+        error instanceof Error ? error.message : "Không thể tải bản tóm tắt.",
       );
     } finally {
       setLoading(false);
@@ -128,7 +157,7 @@ export default function SummariesPageView() {
 
   async function handleGenerateSummary() {
     if (!documentId) {
-      toast.error("Please select a document first.");
+      toast.error("Vui lòng chọn tài liệu trước.");
       return;
     }
 
@@ -142,12 +171,12 @@ export default function SummariesPageView() {
         promptStyle: promptStyle.trim() || undefined,
       });
 
-      toast.success("Summary created.");
+      toast.success("Đã tạo bản tóm tắt.");
       setPage(1);
       await loadSummaries(1, filterDocumentId);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot create summary.",
+        error instanceof Error ? error.message : "Không thể tạo bản tóm tắt.",
       );
     } finally {
       setGenerating(false);
@@ -160,7 +189,7 @@ export default function SummariesPageView() {
     try {
       setIsDeleting(true);
       await deleteSummary(deleteTarget.id);
-      toast.success("Summary deleted.");
+      toast.success("Đã xóa bản tóm tắt.");
       setDeleteTarget(null);
 
       const nextPage = summaries.length === 1 && page > 1 ? page - 1 : page;
@@ -169,7 +198,7 @@ export default function SummariesPageView() {
       await loadSummaries(nextPage, filterDocumentId);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot delete summary.",
+        error instanceof Error ? error.message : "Không thể xóa bản tóm tắt.",
       );
     } finally {
       setIsDeleting(false);
@@ -202,21 +231,21 @@ export default function SummariesPageView() {
                   href="/dashboard"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Back to dashboard
+                  ← Quay lại tổng quan
                 </Link>
 
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Summary workspace
+                  Không gian tóm tắt
                 </div>
 
                 <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                  Create document summaries
+                  Tạo bản tóm tắt tài liệu
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                  Generate reusable summaries from processed documents and keep
-                  a clean history for later use.
+                  Tạo bản tóm tắt có thể tái sử dụng từ các tài liệu đã xử lý và
+                  lưu lịch sử để dùng lại về sau.
                 </p>
               </div>
             </div>
@@ -235,11 +264,11 @@ export default function SummariesPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Total summaries
+                  Tổng bản tóm tắt
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Saved summary records
+                  Bản ghi tóm tắt đã lưu
                 </p>
               </div>
 
@@ -256,11 +285,11 @@ export default function SummariesPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Available documents
+                  Tài liệu khả dụng
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Documents loaded for selection
+                  Tài liệu đã tải để chọn
                 </p>
               </div>
             </div>
@@ -272,15 +301,15 @@ export default function SummariesPageView() {
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Generate
+                  Tạo mới
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                  New summary
+                  Bản tóm tắt mới
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Select a document and choose the output style.
+                  Chọn tài liệu và kiểu đầu ra cho bản tóm tắt.
                 </p>
               </div>
 
@@ -290,7 +319,7 @@ export default function SummariesPageView() {
                     htmlFor="summary-document"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Document
+                    Tài liệu
                   </label>
 
                   <select
@@ -299,10 +328,10 @@ export default function SummariesPageView() {
                     onChange={(event) => setDocumentId(event.target.value)}
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   >
-                    <option value="">Select document...</option>
+                    <option value="">Chọn tài liệu...</option>
                     {documents.map((doc) => (
                       <option key={doc.id} value={doc.id}>
-                        {doc.title} — {doc.status}
+                        {doc.title} — {getDocumentStatusLabel(doc.status)}
                       </option>
                     ))}
                   </select>
@@ -314,7 +343,7 @@ export default function SummariesPageView() {
                       htmlFor="summary-type"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Summary type
+                      Kiểu tóm tắt
                     </label>
 
                     <select
@@ -338,7 +367,7 @@ export default function SummariesPageView() {
                       htmlFor="summary-language"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Language
+                      Ngôn ngữ
                     </label>
 
                     <input
@@ -357,7 +386,7 @@ export default function SummariesPageView() {
                     htmlFor="summary-prompt-style"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Prompt style
+                    Phong cách prompt
                   </label>
 
                   <input
@@ -365,7 +394,7 @@ export default function SummariesPageView() {
                     type="text"
                     value={promptStyle}
                     onChange={(event) => setPromptStyle(event.target.value)}
-                    placeholder="Professional, concise, beginner friendly..."
+                    placeholder="Chuyên nghiệp, ngắn gọn, dễ hiểu cho người mới..."
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   />
                 </div>
@@ -381,7 +410,7 @@ export default function SummariesPageView() {
                     </p>
 
                     <div className="mt-3 inline-flex rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
-                      {selectedDocument.status}
+                      {getDocumentStatusLabel(selectedDocument.status)}
                     </div>
                   </div>
                 ) : null}
@@ -392,7 +421,7 @@ export default function SummariesPageView() {
                   disabled={generating || !documentId}
                   className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  {generating ? "Generating..." : "Generate summary"}
+                  {generating ? "Đang tạo..." : "Tạo bản tóm tắt"}
                 </button>
               </div>
             </section>
@@ -402,15 +431,16 @@ export default function SummariesPageView() {
             <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  History
+                  Lịch sử
                 </p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Summary history
+                  Lịch sử tóm tắt
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Review generated summaries and copy reusable results.
+                  Xem lại các bản tóm tắt đã tạo và sao chép kết quả để tái sử
+                  dụng.
                 </p>
               </div>
 
@@ -419,7 +449,7 @@ export default function SummariesPageView() {
                   htmlFor="summary-filter-document"
                   className="text-sm font-semibold text-slate-700"
                 >
-                  Filter by document
+                  Lọc theo tài liệu
                 </label>
 
                 <select
@@ -431,7 +461,7 @@ export default function SummariesPageView() {
                   }}
                   className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                 >
-                  <option value="">All documents</option>
+                  <option value="">Tất cả tài liệu</option>
                   {documents.map((doc) => (
                     <option key={doc.id} value={doc.id}>
                       {doc.title}
@@ -455,11 +485,11 @@ export default function SummariesPageView() {
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
                 <p className="text-sm font-semibold text-slate-800">
-                  No summaries yet
+                  Chưa có bản tóm tắt
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Create the first summary from a processed document.
+                  Hãy tạo bản tóm tắt đầu tiên từ một tài liệu đã xử lý.
                 </p>
               </div>
             ) : (
@@ -501,12 +531,12 @@ export default function SummariesPageView() {
                             onClick={() =>
                               void copyToClipboard(
                                 summary.content,
-                                "Summary copied.",
+                                "Đã sao chép bản tóm tắt.",
                               )
                             }
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                           >
-                            Copy
+                            Sao chép
                           </button>
 
                           <button
@@ -514,7 +544,7 @@ export default function SummariesPageView() {
                             onClick={() => setDeleteTarget(summary)}
                             className="rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                           >
-                            Delete
+                            Xóa
                           </button>
                         </div>
                       </div>
@@ -522,7 +552,7 @@ export default function SummariesPageView() {
                       {summary.promptStyle ? (
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                           <span className="font-semibold text-slate-800">
-                            Prompt style:
+                            Phong cách prompt:
                           </span>{" "}
                           {summary.promptStyle}
                         </div>
@@ -533,7 +563,7 @@ export default function SummariesPageView() {
                       </p>
 
                       <div className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
-                        Model{" "}
+                        Mô hình{" "}
                         <span className="font-medium text-slate-600">
                           {summary.createdByAiModel}
                         </span>
@@ -544,11 +574,11 @@ export default function SummariesPageView() {
 
                 <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
                   <p className="text-sm text-slate-500">
-                    Page{" "}
+                    Trang{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.page}
                     </span>{" "}
-                    of{" "}
+                    /{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.totalPages}
                     </span>
@@ -561,7 +591,7 @@ export default function SummariesPageView() {
                       disabled={pagination.page <= 1}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Previous
+                      Trước
                     </button>
 
                     <button
@@ -574,7 +604,7 @@ export default function SummariesPageView() {
                       disabled={pagination.page >= pagination.totalPages}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Next
+                      Sau
                     </button>
                   </div>
                 </div>
@@ -586,14 +616,14 @@ export default function SummariesPageView() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Delete summary?"
+        title="Xóa bản tóm tắt?"
         description={
           deleteTarget
-            ? `The summary for "${deleteTarget.documentTitle}" will be deleted.`
-            : "This summary will be deleted."
+            ? `Bản tóm tắt của tài liệu "${deleteTarget.documentTitle}" sẽ bị xóa.`
+            : "Bản tóm tắt này sẽ bị xóa."
         }
-        confirmText="Delete summary"
-        cancelText="Cancel"
+        confirmText={isDeleting ? "Đang xóa..." : "Xóa bản tóm tắt"}
+        cancelText="Hủy"
         tone="danger"
         loading={isDeleting}
         onCancel={() => {

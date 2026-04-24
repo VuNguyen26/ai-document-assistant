@@ -12,44 +12,44 @@ type DashboardLayoutProps = {
 const NAV_ITEMS = [
   {
     href: "/dashboard",
-    label: "Dashboard",
-    description: "Overview",
+    label: "Tổng quan",
+    description: "Bảng điều khiển",
     icon: "🏠",
   },
   {
     href: "/documents",
-    label: "Documents",
-    description: "Upload & manage files",
+    label: "Tài liệu",
+    description: "Tải lên và quản lý tệp",
     icon: "📄",
   },
   {
     href: "/workspaces",
-    label: "Workspaces",
-    description: "Group documents",
+    label: "Không gian làm việc",
+    description: "Nhóm tài liệu",
     icon: "🗂️",
   },
   {
     href: "/summaries",
-    label: "Summaries",
-    description: "AI document summary",
+    label: "Tóm tắt",
+    description: "Tóm tắt tài liệu bằng AI",
     icon: "📝",
   },
   {
     href: "/translations",
-    label: "Translations",
-    description: "Translate content",
+    label: "Dịch thuật",
+    description: "Dịch nội dung",
     icon: "🌐",
   },
   {
     href: "/profile",
-    label: "Profile",
-    description: "Account information",
+    label: "Hồ sơ",
+    description: "Thông tin tài khoản",
     icon: "👤",
   },
   {
     href: "/settings",
-    label: "Settings",
-    description: "System preferences",
+    label: "Cài đặt",
+    description: "Tùy chỉnh hệ thống",
     icon: "⚙️",
   },
 ];
@@ -63,7 +63,7 @@ function getPageTitle(pathname: string) {
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   });
 
-  return activeItem?.label ?? "Dashboard";
+  return activeItem?.label ?? "Tổng quan";
 }
 
 function getPageDescription(pathname: string) {
@@ -75,7 +75,18 @@ function getPageDescription(pathname: string) {
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   });
 
-  return activeItem?.description ?? "Manage your AI document workflow";
+  return activeItem?.description ?? "Quản lý quy trình tài liệu AI";
+}
+
+function getRoleLabel(role?: string | null) {
+  switch (role?.toUpperCase()) {
+    case "ADMIN":
+      return "Quản trị viên";
+    case "USER":
+      return "Người dùng";
+    default:
+      return role ?? "Người dùng";
+  }
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -113,7 +124,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="rounded-3xl border border-white/10 bg-white/5 px-6 py-5 shadow-2xl backdrop-blur">
           <div className="flex items-center gap-3">
             <div className="h-3 w-3 animate-pulse rounded-full bg-blue-400" />
-            <span>Đang tải workspace...</span>
+            <span>Đang tải không gian làm việc...</span>
           </div>
         </div>
       </div>
@@ -126,6 +137,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const pageTitle = getPageTitle(pathname);
   const pageDescription = getPageDescription(pathname);
+  const roleLabel = getRoleLabel(user.role);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-950">
@@ -143,7 +155,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     Document AI
                   </p>
                   <h1 className="mt-1 text-lg font-black tracking-tight text-slate-950">
-                    Assistant Panel
+                    Bảng điều khiển AI
                   </h1>
                 </div>
               </div>
@@ -202,13 +214,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="border-t border-slate-200 p-4">
             <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Signed in
+                Đang đăng nhập
               </p>
               <p className="mt-2 truncate text-sm font-bold text-slate-900">
                 {user.email}
               </p>
               <p className="mt-1 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                {user.role}
+                {roleLabel}
               </p>
             </div>
 
@@ -230,7 +242,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  aria-label="Open navigation menu"
+                  aria-label="Mở menu điều hướng"
                   className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-xl text-slate-700 transition hover:bg-slate-100 lg:hidden"
                 >
                   {mobileMenuOpen ? "×" : "☰"}
@@ -252,7 +264,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.email}
                   </p>
                   <p className="text-xs font-medium text-slate-400">
-                    {user.role}
+                    {roleLabel}
                   </p>
                 </div>
 

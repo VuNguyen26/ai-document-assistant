@@ -30,27 +30,27 @@ function getStatusStyle(status: string) {
 function getStatusLabel(status: string) {
   switch (status) {
     case "UPLOADED":
-      return "Uploaded";
+      return "Đã tải lên";
     case "PROCESSING":
-      return "Processing";
+      return "Đang xử lý";
     case "VALIDATING":
-      return "Validating";
+      return "Đang kiểm tra";
     case "EXTRACTING":
-      return "Extracting";
+      return "Đang trích xuất";
     case "EXTRACTED":
-      return "Extracted";
+      return "Đã trích xuất";
     case "CHUNKING":
-      return "Chunking";
+      return "Đang chia đoạn";
     case "CHUNKED":
-      return "Chunked";
+      return "Đã chia đoạn";
     case "EMBEDDING":
-      return "Embedding";
+      return "Đang tạo embedding";
     case "READY":
-      return "Ready";
+      return "Sẵn sàng";
     case "FAILED":
-      return "Failed";
+      return "Thất bại";
     case "DELETED":
-      return "Deleted";
+      return "Đã xóa";
     default:
       return status;
   }

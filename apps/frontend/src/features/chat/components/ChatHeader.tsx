@@ -22,7 +22,7 @@ export default function ChatHeader({
           <button
             type="button"
             onClick={onOpenSessions}
-            aria-label="Open chat sessions"
+            aria-label="Mở danh sách cuộc trò chuyện"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 lg:hidden"
           >
             <span className="h-3.5 w-4 border-y-2 border-current" />
@@ -31,7 +31,7 @@ export default function ChatHeader({
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Grounded chat
+              Chat có căn cứ
             </div>
 
             <h2 className="mt-3 truncate text-xl font-semibold tracking-tight text-slate-950">
@@ -39,7 +39,7 @@ export default function ChatHeader({
             </h2>
 
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              Ask questions based on the current document.
+              Đặt câu hỏi dựa trên nội dung của tài liệu hiện tại.
             </p>
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function ChatHeader({
             href={`/documents/${documentId}`}
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
           >
-            Document detail
+            Chi tiết tài liệu
           </Link>
 
           <button
@@ -57,7 +57,7 @@ export default function ChatHeader({
             onClick={onLogout}
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
           >
-            Sign out
+            Đăng xuất
           </button>
         </div>
       </div>

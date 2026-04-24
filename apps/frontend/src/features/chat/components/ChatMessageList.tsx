@@ -19,7 +19,7 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Cannot copy to clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
@@ -51,7 +51,9 @@ export default function ChatMessageList({
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className={`flex ${index % 2 === 0 ? "justify-end" : "justify-start"}`}
+            className={`flex ${
+              index % 2 === 0 ? "justify-end" : "justify-start"
+            }`}
           >
             <div
               className={`h-24 animate-pulse rounded-3xl ${
@@ -73,30 +75,30 @@ export default function ChatMessageList({
           <div className="mx-auto mb-5 h-1.5 w-14 rounded-full bg-indigo-500" />
 
           <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-            Start a new conversation
+            Bắt đầu cuộc trò chuyện mới
           </h3>
 
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">
-            Ask a question about this document. The answer will be generated
-            from processed document content when relevant chunks are found.
+            Hãy đặt câu hỏi về tài liệu này. Câu trả lời sẽ được tạo dựa trên
+            nội dung tài liệu đã xử lý khi hệ thống tìm thấy các đoạn liên quan.
           </p>
 
           <div className="mt-6 grid gap-3 text-left sm:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-sm font-semibold text-slate-900">
-                Ask for a summary
+                Hỏi để tóm tắt
               </p>
               <p className="mt-1 text-sm leading-5 text-slate-500">
-                “Summarize the key points.”
+                “Tóm tắt các ý chính.”
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <p className="text-sm font-semibold text-slate-900">
-                Ask for details
+                Hỏi chi tiết
               </p>
               <p className="mt-1 text-sm leading-5 text-slate-500">
-                “What does it say about the main policy?”
+                “Tài liệu nói gì về chính sách chính?”
               </p>
             </div>
           </div>
@@ -143,7 +145,7 @@ export default function ChatMessageList({
                         isUser ? "text-indigo-100" : "text-slate-400"
                       }`}
                     >
-                      {isUser ? "You" : "Assistant"}
+                      {isUser ? "Bạn" : "Trợ lý"}
                     </p>
                   </div>
 
@@ -163,7 +165,9 @@ export default function ChatMessageList({
                       onClick={() =>
                         void copyToClipboard(
                           message.content,
-                          isUser ? "Question copied." : "Answer copied.",
+                          isUser
+                            ? "Đã sao chép câu hỏi."
+                            : "Đã sao chép câu trả lời.",
                         )
                       }
                       className={`rounded-full px-3 py-1 text-[11px] font-semibold transition ${
@@ -172,7 +176,7 @@ export default function ChatMessageList({
                           : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                       }`}
                     >
-                      Copy
+                      Sao chép
                     </button>
                   </div>
                 </div>
@@ -200,7 +204,7 @@ export default function ChatMessageList({
             <div className="rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-sm text-slate-500 shadow-sm">
               <div className="flex items-center gap-3">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-                <span className="font-medium">Assistant is writing...</span>
+                <span className="font-medium">Trợ lý đang trả lời...</span>
               </div>
             </div>
           </article>

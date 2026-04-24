@@ -26,8 +26,8 @@ const SOURCE_TYPE_OPTIONS: Array<{
   value: TranslationSourceType;
   label: string;
 }> = [
-  { value: "DOCUMENT", label: "Document content" },
-  { value: "SUMMARY", label: "Summary" },
+  { value: "DOCUMENT", label: "Nội dung tài liệu" },
+  { value: "SUMMARY", label: "Bản tóm tắt" },
 ];
 
 function formatDate(value: string) {
@@ -49,12 +49,54 @@ function truncateText(value: string, maxLength = 620) {
   return `${clean.slice(0, maxLength)}...`;
 }
 
+function getDocumentStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Đã tải lên";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "VALIDATING":
+      return "Đang kiểm tra";
+    case "EXTRACTING":
+      return "Đang trích xuất";
+    case "EXTRACTED":
+      return "Đã trích xuất";
+    case "CHUNKING":
+      return "Đang chia đoạn";
+    case "CHUNKED":
+      return "Đã chia đoạn";
+    case "EMBEDDING":
+      return "Đang tạo embedding";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
+    default:
+      return status;
+  }
+}
+
+function getSourceTypeLabel(value: string) {
+  switch (value) {
+    case "DOCUMENT":
+    case "Document content":
+      return "Nội dung tài liệu";
+    case "SUMMARY":
+    case "Summary":
+      return "Bản tóm tắt";
+    default:
+      return value;
+  }
+}
+
 async function copyToClipboard(value: string, successMessage: string) {
   try {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Cannot copy to clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
@@ -102,7 +144,7 @@ export default function TranslationsPageView() {
       setDocuments(data.items);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load documents.",
+        error instanceof Error ? error.message : "Không thể tải tài liệu.",
       );
     }
   }
@@ -126,7 +168,7 @@ export default function TranslationsPageView() {
     } catch (error) {
       setSummaries([]);
       toast.error(
-        error instanceof Error ? error.message : "Cannot load summaries.",
+        error instanceof Error ? error.message : "Không thể tải bản tóm tắt.",
       );
     } finally {
       setLoadingSummaries(false);
@@ -152,7 +194,7 @@ export default function TranslationsPageView() {
       setPagination(data.pagination);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load translations.",
+        error instanceof Error ? error.message : "Không thể tải bản dịch.",
       );
     } finally {
       setLoading(false);
@@ -161,12 +203,12 @@ export default function TranslationsPageView() {
 
   async function handleGenerateTranslation() {
     if (!documentId) {
-      toast.error("Please select a document first.");
+      toast.error("Vui lòng chọn tài liệu trước.");
       return;
     }
 
     if (sourceType === "SUMMARY" && !summaryId) {
-      toast.error("Please select a summary first.");
+      toast.error("Vui lòng chọn bản tóm tắt trước.");
       return;
     }
 
@@ -182,12 +224,12 @@ export default function TranslationsPageView() {
         style: style.trim() || undefined,
       });
 
-      toast.success("Translation created.");
+      toast.success("Đã tạo bản dịch.");
       setPage(1);
       await loadTranslations(1, filterDocumentId, filterSourceType);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot create translation.",
+        error instanceof Error ? error.message : "Không thể tạo bản dịch.",
       );
     } finally {
       setGenerating(false);
@@ -200,7 +242,7 @@ export default function TranslationsPageView() {
     try {
       setIsDeleting(true);
       await deleteTranslation(deleteTarget.id);
-      toast.success("Translation deleted.");
+      toast.success("Đã xóa bản dịch.");
       setDeleteTarget(null);
 
       const nextPage =
@@ -210,7 +252,7 @@ export default function TranslationsPageView() {
       await loadTranslations(nextPage, filterDocumentId, filterSourceType);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot delete translation.",
+        error instanceof Error ? error.message : "Không thể xóa bản dịch.",
       );
     } finally {
       setIsDeleting(false);
@@ -256,21 +298,21 @@ export default function TranslationsPageView() {
                   href="/dashboard"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Back to dashboard
+                  ← Quay lại tổng quan
                 </Link>
 
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Translation workspace
+                  Không gian dịch thuật
                 </div>
 
                 <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                  Translate document content
+                  Dịch nội dung tài liệu
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                  Create translations from full document content or previously
-                  generated summaries, then reuse them from history.
+                  Tạo bản dịch từ toàn bộ nội dung tài liệu hoặc từ bản tóm tắt
+                  đã tạo trước đó, sau đó lưu lại trong lịch sử để tái sử dụng.
                 </p>
               </div>
             </div>
@@ -289,11 +331,11 @@ export default function TranslationsPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Total translations
+                  Tổng bản dịch
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Saved translation records
+                  Bản ghi dịch thuật đã lưu
                 </p>
               </div>
 
@@ -310,11 +352,11 @@ export default function TranslationsPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Available sources
+                  Nguồn khả dụng
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Documents loaded for translation
+                  Tài liệu đã tải để chọn dịch
                 </p>
               </div>
             </div>
@@ -326,15 +368,15 @@ export default function TranslationsPageView() {
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Generate
+                  Tạo mới
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                  New translation
+                  Bản dịch mới
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Select the source, target language and output style.
+                  Chọn nguồn dịch, ngôn ngữ đích và phong cách đầu ra.
                 </p>
               </div>
 
@@ -344,7 +386,7 @@ export default function TranslationsPageView() {
                     htmlFor="translation-document"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Document
+                    Tài liệu
                   </label>
 
                   <select
@@ -353,10 +395,10 @@ export default function TranslationsPageView() {
                     onChange={(event) => setDocumentId(event.target.value)}
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   >
-                    <option value="">Select document...</option>
+                    <option value="">Chọn tài liệu...</option>
                     {documents.map((doc) => (
                       <option key={doc.id} value={doc.id}>
-                        {doc.title} — {doc.status}
+                        {doc.title} — {getDocumentStatusLabel(doc.status)}
                       </option>
                     ))}
                   </select>
@@ -368,7 +410,7 @@ export default function TranslationsPageView() {
                       htmlFor="translation-source-type"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Source type
+                      Loại nguồn
                     </label>
 
                     <select
@@ -394,7 +436,7 @@ export default function TranslationsPageView() {
                       htmlFor="translation-target-language"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Target language
+                      Ngôn ngữ đích
                     </label>
 
                     <input
@@ -413,7 +455,7 @@ export default function TranslationsPageView() {
                       htmlFor="translation-summary"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Summary source
+                      Nguồn bản tóm tắt
                     </label>
 
                     <select
@@ -425,10 +467,10 @@ export default function TranslationsPageView() {
                     >
                       <option value="">
                         {!documentId
-                          ? "Select document first..."
+                          ? "Chọn tài liệu trước..."
                           : loadingSummaries
-                            ? "Loading summaries..."
-                            : "Select summary..."}
+                            ? "Đang tải bản tóm tắt..."
+                            : "Chọn bản tóm tắt..."}
                       </option>
 
                       {summaries.map((summary) => (
@@ -447,7 +489,7 @@ export default function TranslationsPageView() {
                       htmlFor="translation-source-language"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Source language
+                      Ngôn ngữ nguồn
                     </label>
 
                     <input
@@ -456,7 +498,7 @@ export default function TranslationsPageView() {
                       onChange={(event) =>
                         setSourceLanguage(event.target.value)
                       }
-                      placeholder="Optional"
+                      placeholder="Không bắt buộc"
                       className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
                   </div>
@@ -466,14 +508,14 @@ export default function TranslationsPageView() {
                       htmlFor="translation-style"
                       className="text-sm font-semibold text-slate-700"
                     >
-                      Style
+                      Phong cách
                     </label>
 
                     <input
                       id="translation-style"
                       value={style}
                       onChange={(event) => setStyle(event.target.value)}
-                      placeholder="Natural, formal, concise..."
+                      placeholder="Tự nhiên, trang trọng, ngắn gọn..."
                       className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
                   </div>
@@ -491,7 +533,7 @@ export default function TranslationsPageView() {
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span className="rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
-                        {selectedDocument.status}
+                        {getDocumentStatusLabel(selectedDocument.status)}
                       </span>
 
                       {selectedSummary ? (
@@ -514,7 +556,7 @@ export default function TranslationsPageView() {
                   }
                   className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
                 >
-                  {generating ? "Generating..." : "Generate translation"}
+                  {generating ? "Đang tạo..." : "Tạo bản dịch"}
                 </button>
               </div>
             </section>
@@ -524,15 +566,16 @@ export default function TranslationsPageView() {
             <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  History
+                  Lịch sử
                 </p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Translation history
+                  Lịch sử bản dịch
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Review generated translations and copy reusable output.
+                  Xem lại các bản dịch đã tạo và sao chép kết quả để tái sử
+                  dụng.
                 </p>
               </div>
 
@@ -542,7 +585,7 @@ export default function TranslationsPageView() {
                     htmlFor="translation-filter-document"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Filter by document
+                    Lọc theo tài liệu
                   </label>
 
                   <select
@@ -554,7 +597,7 @@ export default function TranslationsPageView() {
                     }}
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   >
-                    <option value="">All documents</option>
+                    <option value="">Tất cả tài liệu</option>
                     {documents.map((doc) => (
                       <option key={doc.id} value={doc.id}>
                         {doc.title}
@@ -568,7 +611,7 @@ export default function TranslationsPageView() {
                     htmlFor="translation-filter-source-type"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Filter by source
+                    Lọc theo nguồn
                   </label>
 
                   <select
@@ -583,7 +626,7 @@ export default function TranslationsPageView() {
                     }}
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   >
-                    <option value="">All sources</option>
+                    <option value="">Tất cả nguồn</option>
                     {SOURCE_TYPE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -608,11 +651,11 @@ export default function TranslationsPageView() {
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
                 <p className="text-sm font-semibold text-slate-800">
-                  No translations yet
+                  Chưa có bản dịch
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                  Create the first translation from a document or summary.
+                  Hãy tạo bản dịch đầu tiên từ một tài liệu hoặc bản tóm tắt.
                 </p>
               </div>
             ) : (
@@ -626,7 +669,7 @@ export default function TranslationsPageView() {
                       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                         <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                            {translation.sourceLabel}
+                            {getSourceTypeLabel(translation.sourceLabel)}
                           </p>
 
                           <h3 className="mt-2 truncate text-lg font-semibold tracking-tight text-slate-950">
@@ -655,12 +698,12 @@ export default function TranslationsPageView() {
                             onClick={() =>
                               void copyToClipboard(
                                 translation.content,
-                                "Translation copied.",
+                                "Đã sao chép bản dịch.",
                               )
                             }
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                           >
-                            Copy
+                            Sao chép
                           </button>
 
                           <button
@@ -668,7 +711,7 @@ export default function TranslationsPageView() {
                             onClick={() => setDeleteTarget(translation)}
                             className="rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                           >
-                            Delete
+                            Xóa
                           </button>
                         </div>
                       </div>
@@ -676,7 +719,7 @@ export default function TranslationsPageView() {
                       {translation.style ? (
                         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                           <span className="font-semibold text-slate-800">
-                            Style:
+                            Phong cách:
                           </span>{" "}
                           {translation.style}
                         </div>
@@ -687,7 +730,7 @@ export default function TranslationsPageView() {
                       </p>
 
                       <div className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
-                        Model{" "}
+                        Mô hình{" "}
                         <span className="font-medium text-slate-600">
                           {translation.createdByAiModel}
                         </span>
@@ -698,11 +741,11 @@ export default function TranslationsPageView() {
 
                 <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
                   <p className="text-sm text-slate-500">
-                    Page{" "}
+                    Trang{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.page}
                     </span>{" "}
-                    of{" "}
+                    /{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.totalPages}
                     </span>
@@ -715,7 +758,7 @@ export default function TranslationsPageView() {
                       disabled={pagination.page <= 1}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Previous
+                      Trước
                     </button>
 
                     <button
@@ -728,7 +771,7 @@ export default function TranslationsPageView() {
                       disabled={pagination.page >= pagination.totalPages}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Next
+                      Sau
                     </button>
                   </div>
                 </div>
@@ -740,14 +783,14 @@ export default function TranslationsPageView() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Delete translation?"
+        title="Xóa bản dịch?"
         description={
           deleteTarget
-            ? `The translation for "${deleteTarget.documentTitle}" will be deleted.`
-            : "This translation will be deleted."
+            ? `Bản dịch của tài liệu "${deleteTarget.documentTitle}" sẽ bị xóa.`
+            : "Bản dịch này sẽ bị xóa."
         }
-        confirmText="Delete translation"
-        cancelText="Cancel"
+        confirmText={isDeleting ? "Đang xóa..." : "Xóa bản dịch"}
+        cancelText="Hủy"
         tone="danger"
         loading={isDeleting}
         onCancel={() => {

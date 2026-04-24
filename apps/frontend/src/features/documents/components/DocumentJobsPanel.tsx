@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 
-import { getDocumentJobs } from '../api/document-jobs.api';
+import { getDocumentJobs } from "../api/document-jobs.api";
 import type {
   DocumentJobsListResponse,
   DocumentProcessingJob,
   DocumentProcessingJobStatus,
-} from '../types/document-jobs.types';
-import { isDocumentJobActive } from '../types/document-jobs.types';
+} from "../types/document-jobs.types";
+import { isDocumentJobActive } from "../types/document-jobs.types";
 
 type DocumentJobsPanelProps = {
   documentId: string;
@@ -21,32 +21,32 @@ type DocumentJobsPanelProps = {
 const PAGE_SIZE = 10;
 
 function formatDate(value?: string | null) {
-  if (!value) return '—';
+  if (!value) return "—";
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(date);
 }
 
 function getStatusLabel(status: DocumentProcessingJobStatus) {
   switch (status) {
-    case 'QUEUED':
-      return 'Queued';
-    case 'RUNNING':
-      return 'Running';
-    case 'SUCCEEDED':
-      return 'Succeeded';
-    case 'FAILED':
-      return 'Failed';
-    case 'RETRYING':
-      return 'Retrying';
-    case 'CANCELLED':
-      return 'Cancelled';
+    case "QUEUED":
+      return "Đang chờ";
+    case "RUNNING":
+      return "Đang chạy";
+    case "SUCCEEDED":
+      return "Thành công";
+    case "FAILED":
+      return "Thất bại";
+    case "RETRYING":
+      return "Đang thử lại";
+    case "CANCELLED":
+      return "Đã hủy";
     default:
       return status;
   }
@@ -54,24 +54,24 @@ function getStatusLabel(status: DocumentProcessingJobStatus) {
 
 function getStatusClassName(status: DocumentProcessingJobStatus) {
   switch (status) {
-    case 'SUCCEEDED':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'FAILED':
-      return 'bg-rose-50 text-rose-700 border-rose-200';
-    case 'RUNNING':
-    case 'RETRYING':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'QUEUED':
-      return 'bg-sky-50 text-sky-700 border-sky-200';
-    case 'CANCELLED':
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+    case "SUCCEEDED":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "FAILED":
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    case "RUNNING":
+    case "RETRYING":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "QUEUED":
+      return "bg-sky-50 text-sky-700 border-sky-200";
+    case "CANCELLED":
+      return "bg-slate-100 text-slate-700 border-slate-200";
     default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
 
 function getTypeLabel(type: string) {
-  return type === 'REPROCESS' ? 'Reprocess' : 'Process';
+  return type === "REPROCESS" ? "Xử lý lại" : "Xử lý";
 }
 
 export default function DocumentJobsPanel({
@@ -82,7 +82,7 @@ export default function DocumentJobsPanel({
 }: DocumentJobsPanelProps) {
   const [jobs, setJobs] = useState<DocumentProcessingJob[]>([]);
   const [pagination, setPagination] =
-    useState<DocumentJobsListResponse['pagination']>({
+    useState<DocumentJobsListResponse["pagination"]>({
       page: 1,
       limit: PAGE_SIZE,
       total: 0,
@@ -92,7 +92,7 @@ export default function DocumentJobsPanel({
   const [refreshing, setRefreshing] = useState(false);
 
   const shouldPoll = useMemo(() => {
-    return documentStatus === 'PROCESSING' || isDocumentJobActive(latestJob);
+    return documentStatus === "PROCESSING" || isDocumentJobActive(latestJob);
   }, [documentStatus, latestJob]);
 
   async function loadJobs(showLoading = true, silent = false) {
@@ -115,7 +115,7 @@ export default function DocumentJobsPanel({
         toast.error(
           error instanceof Error
             ? error.message
-            : 'Không thể tải lịch sử xử lý tài liệu',
+            : "Không thể tải lịch sử xử lý tài liệu",
         );
       }
     } finally {
@@ -144,10 +144,11 @@ export default function DocumentJobsPanel({
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">
-            Background jobs
+            Tác vụ nền
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Theo dõi auto pipeline, process, reprocess và retry của tài liệu này.
+            Theo dõi pipeline tự động, xử lý, xử lý lại và thử lại của tài liệu
+            này.
           </p>
         </div>
 
@@ -156,14 +157,14 @@ export default function DocumentJobsPanel({
           onClick={() => void loadJobs(false)}
           className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
         >
-          {refreshing ? 'Đang refresh...' : 'Refresh jobs'}
+          {refreshing ? "Đang làm mới..." : "Làm mới tác vụ"}
         </button>
       </div>
 
       <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-slate-700">
-            Latest job:
+            Tác vụ gần nhất:
           </span>
 
           {latestJob ? (
@@ -181,11 +182,13 @@ export default function DocumentJobsPanel({
               </span>
 
               <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                Attempts {latestJob.attempts}/{latestJob.maxAttempts}
+                Lần thử {latestJob.attempts}/{latestJob.maxAttempts}
               </span>
             </>
           ) : (
-            <span className="text-sm text-slate-500">Chưa có job nào</span>
+            <span className="text-sm text-slate-500">
+              Chưa có tác vụ nào
+            </span>
           )}
         </div>
 
@@ -197,7 +200,7 @@ export default function DocumentJobsPanel({
 
         {shouldPoll ? (
           <p className="mt-3 text-xs text-amber-700">
-            Hệ thống đang tự polling mỗi 3 giây trong lúc job còn active.
+            Hệ thống đang tự làm mới mỗi 3 giây trong lúc tác vụ còn hoạt động.
           </p>
         ) : null}
       </div>
@@ -214,10 +217,11 @@ export default function DocumentJobsPanel({
       ) : jobs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
           <p className="text-sm font-medium text-slate-700">
-            Chưa có lịch sử job
+            Chưa có lịch sử tác vụ
           </p>
           <p className="mt-2 text-sm text-slate-500">
-            Upload mới hoặc process/reprocess sẽ tạo job tại đây.
+            Khi tải tài liệu mới, xử lý hoặc xử lý lại, hệ thống sẽ tạo tác vụ
+            tại đây.
           </p>
         </div>
       ) : (
@@ -244,15 +248,15 @@ export default function DocumentJobsPanel({
                       </span>
 
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
-                        Attempts {job.attempts}/{job.maxAttempts}
+                        Lần thử {job.attempts}/{job.maxAttempts}
                       </span>
                     </div>
 
                     <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                      <p>Created: {formatDate(job.createdAt)}</p>
-                      <p>Started: {formatDate(job.startedAt)}</p>
-                      <p>Completed: {formatDate(job.completedAt)}</p>
-                      <p>Next run: {formatDate(job.nextRunAt)}</p>
+                      <p>Ngày tạo: {formatDate(job.createdAt)}</p>
+                      <p>Bắt đầu: {formatDate(job.startedAt)}</p>
+                      <p>Hoàn tất: {formatDate(job.completedAt)}</p>
+                      <p>Lần chạy tiếp theo: {formatDate(job.nextRunAt)}</p>
                     </div>
                   </div>
 
@@ -271,7 +275,7 @@ export default function DocumentJobsPanel({
           </div>
 
           <div className="mt-4 text-xs text-slate-400">
-            Showing {jobs.length} / {pagination.total} jobs
+            Đang hiển thị {jobs.length} / {pagination.total} tác vụ
           </div>
         </>
       )}

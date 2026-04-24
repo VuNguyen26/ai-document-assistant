@@ -27,21 +27,21 @@ async function copyToClipboard(value: string, successMessage: string) {
     await navigator.clipboard.writeText(value);
     toast.success(successMessage);
   } catch {
-    toast.error("Cannot copy to clipboard.");
+    toast.error("Không thể sao chép vào clipboard.");
   }
 }
 
 function buildCitationText(citation: ChatCitation) {
   return [
-    `Document: ${citation.documentName}`,
-    `Document ID: ${citation.documentId}`,
-    `Chunk ID: ${citation.chunkId}`,
-    `Chunk Index: ${citation.chunkIndex}`,
-    `Score: ${formatScore(citation.score)}`,
-    `Distance: ${citation.distance}`,
-    `Start Offset: ${citation.startOffset ?? "-"}`,
-    `End Offset: ${citation.endOffset ?? "-"}`,
-    `Char Count: ${citation.charCount}`,
+    `Tài liệu: ${citation.documentName}`,
+    `ID tài liệu: ${citation.documentId}`,
+    `ID đoạn: ${citation.chunkId}`,
+    `Thứ tự đoạn: ${citation.chunkIndex}`,
+    `Điểm liên quan: ${formatScore(citation.score)}`,
+    `Khoảng cách: ${citation.distance}`,
+    `Vị trí bắt đầu: ${citation.startOffset ?? "-"}`,
+    `Vị trí kết thúc: ${citation.endOffset ?? "-"}`,
+    `Số ký tự: ${citation.charCount}`,
     "",
     citation.content,
   ].join("\n");
@@ -55,15 +55,15 @@ export default function ChatCitations({ citations }: ChatCitationsProps) {
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">
-            Sources used
+            Nguồn đã sử dụng
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            {citations.length} relevant chunk{citations.length > 1 ? "s" : ""}
+            {citations.length} đoạn nội dung liên quan
           </p>
         </div>
 
         <span className="rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
-          View
+          Xem
         </span>
       </summary>
 
@@ -81,15 +81,15 @@ export default function ChatCitations({ citations }: ChatCitationsProps) {
 
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                    Chunk {citation.chunkIndex}
+                    Đoạn {citation.chunkIndex}
                   </span>
 
                   <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                    Score {formatScore(citation.score)}
+                    Điểm {formatScore(citation.score)}
                   </span>
 
                   <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-                    {citation.charCount} chars
+                    {citation.charCount} ký tự
                   </span>
                 </div>
               </div>
@@ -100,12 +100,12 @@ export default function ChatCitations({ citations }: ChatCitationsProps) {
                   onClick={() =>
                     void copyToClipboard(
                       truncateText(citation.content, 10000),
-                      "Chunk copied.",
+                      "Đã sao chép đoạn nội dung.",
                     )
                   }
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  Copy chunk
+                  Sao chép đoạn
                 </button>
 
                 <button
@@ -113,12 +113,12 @@ export default function ChatCitations({ citations }: ChatCitationsProps) {
                   onClick={() =>
                     void copyToClipboard(
                       buildCitationText(citation),
-                      "Citation copied.",
+                      "Đã sao chép nguồn tham chiếu.",
                     )
                   }
                   className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  Copy ref
+                  Sao chép nguồn
                 </button>
               </div>
             </div>
@@ -128,9 +128,9 @@ export default function ChatCitations({ citations }: ChatCitationsProps) {
             </p>
 
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-              <span>start {citation.startOffset ?? "-"}</span>
-              <span>end {citation.endOffset ?? "-"}</span>
-              <span>distance {citation.distance}</span>
+              <span>bắt đầu {citation.startOffset ?? "-"}</span>
+              <span>kết thúc {citation.endOffset ?? "-"}</span>
+              <span>khoảng cách {citation.distance}</span>
             </div>
           </div>
         ))}

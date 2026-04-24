@@ -49,11 +49,11 @@ export default function ChatSidebar({
       <div className="border-b border-slate-200 p-5">
         <div className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Conversations
+            Hội thoại
           </p>
 
           <h2 className="mt-2 text-lg font-semibold tracking-tight text-slate-950">
-            Chat sessions
+            Phiên chat
           </h2>
         </div>
 
@@ -62,7 +62,7 @@ export default function ChatSidebar({
           onClick={onNewChat}
           className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
         >
-          New chat
+          Chat mới
         </button>
       </div>
 
@@ -81,11 +81,11 @@ export default function ChatSidebar({
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
             <p className="text-sm font-semibold text-slate-800">
-              No conversations yet
+              Chưa có cuộc trò chuyện
             </p>
 
             <p className="mx-auto mt-2 max-w-[220px] text-sm leading-6 text-slate-500">
-              Send your first question to create a new chat session.
+              Gửi câu hỏi đầu tiên để tạo một phiên chat mới.
             </p>
           </div>
         ) : (
@@ -112,7 +112,7 @@ export default function ChatSidebar({
                           onRenameValueChange(event.target.value)
                         }
                         className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
-                        placeholder="New title"
+                        placeholder="Tiêu đề mới"
                       />
 
                       <div className="flex items-center justify-end gap-2">
@@ -121,7 +121,7 @@ export default function ChatSidebar({
                           onClick={onCancelRename}
                           className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
                         >
-                          Cancel
+                          Hủy
                         </button>
 
                         <button
@@ -129,7 +129,7 @@ export default function ChatSidebar({
                           onClick={() => onConfirmRename(session.id)}
                           className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700"
                         >
-                          Save
+                          Lưu
                         </button>
                       </div>
                     </div>
@@ -149,7 +149,7 @@ export default function ChatSidebar({
 
                           <div className="min-w-0 flex-1">
                             <p className="line-clamp-2 text-sm font-semibold leading-5 text-slate-950">
-                              {session.title || "Untitled chat"}
+                              {session.title || "Chat chưa đặt tên"}
                             </p>
 
                             <p className="mt-1 text-xs font-medium text-slate-400">
@@ -165,7 +165,7 @@ export default function ChatSidebar({
                           onClick={() => onStartRename(session)}
                           className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                         >
-                          Rename
+                          Đổi tên
                         </button>
 
                         <button
@@ -173,7 +173,7 @@ export default function ChatSidebar({
                           onClick={() => onDeleteSession(session.id)}
                           className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
                         >
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </>

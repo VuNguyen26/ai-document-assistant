@@ -36,9 +36,11 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
       }
 
       await onUploaded?.();
-      toast.success("Upload tài liệu thành công.");
+      toast.success("Tải tài liệu lên thành công.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Upload thất bại.");
+      toast.error(
+        error instanceof Error ? error.message : "Tải tài liệu thất bại.",
+      );
     } finally {
       setLoading(false);
     }
@@ -50,15 +52,15 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-              Upload
+              Tải lên
             </p>
 
             <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-              Add document
+              Thêm tài liệu
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Upload a file and let the system prepare it for search and chat.
+              Tải tệp lên để hệ thống chuẩn bị dữ liệu cho tìm kiếm và chat.
             </p>
           </div>
 
@@ -74,7 +76,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             htmlFor="document-title"
             className="text-sm font-semibold text-slate-700"
           >
-            Title
+            Tiêu đề
           </label>
 
           <input
@@ -82,7 +84,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             type="text"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Optional document title"
+            placeholder="Nhập tiêu đề tài liệu nếu cần"
             className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
           />
         </div>
@@ -92,7 +94,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             htmlFor="document-file"
             className="text-sm font-semibold text-slate-700"
           >
-            File
+            Tệp tài liệu
           </label>
 
           <label
@@ -102,7 +104,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             <input
               ref={inputRef}
               id="document-file"
-              title="Chọn file tài liệu"
+              title="Chọn tệp tài liệu"
               type="file"
               accept=".pdf,.docx,.txt"
               onChange={(event) => setFile(event.target.files?.[0] || null)}
@@ -112,18 +114,18 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-slate-900">
-                  {file ? file.name : "Choose a document"}
+                  {file ? file.name : "Chọn một tài liệu"}
                 </p>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   {file
-                    ? `${formatFileSize(file.size)} · Ready to upload`
-                    : "PDF, DOCX or TXT files are supported."}
+                    ? `${formatFileSize(file.size)} · Sẵn sàng tải lên`
+                    : "Hỗ trợ tệp PDF, DOCX hoặc TXT."}
                 </p>
               </div>
 
               <span className="inline-flex w-full shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 sm:w-auto">
-                Browse file
+                Chọn tệp
               </span>
             </div>
           </label>
@@ -135,7 +137,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
           disabled={!file || loading}
           className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
         >
-          {loading ? "Uploading..." : "Upload document"}
+          {loading ? "Đang tải lên..." : "Tải tài liệu lên"}
         </button>
       </div>
     </section>

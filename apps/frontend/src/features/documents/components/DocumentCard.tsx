@@ -47,45 +47,45 @@ function getPipelineAction(status: string) {
   switch (status) {
     case "UPLOADED":
       return {
-        label: "Ready for extraction",
+        label: "Sẵn sàng để trích xuất",
         tone: "amber" as const,
-        cta: "Continue",
+        cta: "Tiếp tục",
       };
     case "EXTRACTED":
       return {
-        label: "Ready for chunking",
+        label: "Sẵn sàng để chia đoạn",
         tone: "cyan" as const,
-        cta: "Continue",
+        cta: "Tiếp tục",
       };
     case "CHUNKED":
       return {
-        label: "Ready for embeddings",
+        label: "Sẵn sàng để tạo embedding",
         tone: "indigo" as const,
-        cta: "Continue",
+        cta: "Tiếp tục",
       };
     case "PROCESSING":
       return {
-        label: "Processing is running",
+        label: "Đang xử lý",
         tone: "blue" as const,
-        cta: "Processing",
+        cta: "Đang xử lý",
       };
     case "FAILED":
       return {
-        label: "Needs review",
+        label: "Cần kiểm tra lại",
         tone: "rose" as const,
-        cta: "Open detail",
+        cta: "Mở chi tiết",
       };
     case "READY":
       return {
-        label: "Ready for chat",
+        label: "Sẵn sàng để chat",
         tone: "emerald" as const,
-        cta: "Start chat",
+        cta: "Bắt đầu chat",
       };
     default:
       return {
-        label: "Open document detail",
+        label: "Mở chi tiết tài liệu",
         tone: "slate" as const,
-        cta: "View detail",
+        cta: "Xem chi tiết",
       };
   }
 }
@@ -139,17 +139,17 @@ function getJobStatusClass(status: string) {
 function getJobStatusLabel(status: string) {
   switch (status) {
     case "QUEUED":
-      return "Queued";
+      return "Đang chờ";
     case "RUNNING":
-      return "Running";
+      return "Đang chạy";
     case "SUCCEEDED":
-      return "Succeeded";
+      return "Thành công";
     case "FAILED":
-      return "Failed";
+      return "Thất bại";
     case "RETRYING":
-      return "Retrying";
+      return "Đang thử lại";
     case "CANCELLED":
-      return "Cancelled";
+      return "Đã hủy";
     default:
       return status;
   }
@@ -169,7 +169,7 @@ export default function DocumentCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Document
+            Tài liệu
           </p>
 
           <h3 className="mt-2 truncate text-xl font-semibold tracking-tight text-slate-950">
@@ -189,7 +189,7 @@ export default function DocumentCard({
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Type
+            Loại tệp
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-800">
             {getShortMimeType(document.mimeType)}
@@ -198,7 +198,7 @@ export default function DocumentCard({
 
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Size
+            Dung lượng
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-800">
             {formatBytes(document.fileSize)}
@@ -207,16 +207,16 @@ export default function DocumentCard({
 
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Language
+            Ngôn ngữ
           </p>
           <p className="mt-1 truncate text-sm font-semibold text-slate-800">
-            {document.sourceLanguage || "Unknown"}
+            {document.sourceLanguage || "Chưa xác định"}
           </p>
         </div>
 
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Created
+            Ngày tạo
           </p>
           <p className="mt-1 truncate text-sm font-semibold text-slate-800">
             {formatDate(document.createdAt)}
@@ -242,7 +242,7 @@ export default function DocumentCard({
         <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Latest job
+              Job gần nhất
             </p>
 
             <span
@@ -256,16 +256,19 @@ export default function DocumentCard({
 
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-              {document.latestJob.type === "REPROCESS" ? "Reprocess" : "Process"}
+              {document.latestJob.type === "REPROCESS"
+                ? "Xử lý lại"
+                : "Xử lý"}
             </span>
 
             <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-              {document.latestJob.attempts}/{document.latestJob.maxAttempts} attempts
+              {document.latestJob.attempts}/{document.latestJob.maxAttempts}{" "}
+              lần thử
             </span>
           </div>
 
           <p className="mt-3 text-xs text-slate-500">
-            Updated{" "}
+            Cập nhật lúc{" "}
             <span className="font-medium text-slate-700">
               {formatDate(document.latestJob.updatedAt)}
             </span>
@@ -280,7 +283,7 @@ export default function DocumentCard({
             onClick={() => router.push(`/documents/${document.id}`)}
             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
           >
-            Detail
+            Chi tiết
           </button>
 
           {isReady ? (
@@ -307,7 +310,7 @@ export default function DocumentCard({
             onClick={() => onDelete(document.id)}
             className="col-span-2 rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
           >
-            Delete
+            Xóa
           </button>
         </div>
       </div>

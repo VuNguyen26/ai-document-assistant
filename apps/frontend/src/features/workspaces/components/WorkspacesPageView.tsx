@@ -29,6 +29,35 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function getDocumentStatusLabel(status: string) {
+  switch (status) {
+    case "UPLOADED":
+      return "Đã tải lên";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "VALIDATING":
+      return "Đang kiểm tra";
+    case "EXTRACTING":
+      return "Đang trích xuất";
+    case "EXTRACTED":
+      return "Đã trích xuất";
+    case "CHUNKING":
+      return "Đang chia đoạn";
+    case "CHUNKED":
+      return "Đã chia đoạn";
+    case "EMBEDDING":
+      return "Đang tạo embedding";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
+    default:
+      return status;
+  }
+}
+
 export default function WorkspacesPageView() {
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [pagination, setPagination] =
@@ -68,7 +97,9 @@ export default function WorkspacesPageView() {
       setPagination(data.pagination);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot load workspaces.",
+        error instanceof Error
+          ? error.message
+          : "Không thể tải danh sách không gian làm việc.",
       );
     } finally {
       setLoading(false);
@@ -94,7 +125,7 @@ export default function WorkspacesPageView() {
 
   async function handleSubmitWorkspace() {
     if (!name.trim()) {
-      toast.error("Please enter a workspace name.");
+      toast.error("Vui lòng nhập tên không gian làm việc.");
       return;
     }
 
@@ -107,14 +138,14 @@ export default function WorkspacesPageView() {
           description: description.trim() || undefined,
         });
 
-        toast.success("Workspace updated.");
+        toast.success("Đã cập nhật không gian làm việc.");
       } else {
         await createWorkspace({
           name: name.trim(),
           description: description.trim() || undefined,
         });
 
-        toast.success("Workspace created.");
+        toast.success("Đã tạo không gian làm việc.");
       }
 
       resetForm();
@@ -122,7 +153,9 @@ export default function WorkspacesPageView() {
       await loadWorkspaces(1, search);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Workspace action failed.",
+        error instanceof Error
+          ? error.message
+          : "Thao tác với không gian làm việc thất bại.",
       );
     } finally {
       setSubmitting(false);
@@ -135,7 +168,7 @@ export default function WorkspacesPageView() {
     try {
       setIsDeleting(true);
       await deleteWorkspace(deleteTarget.id);
-      toast.success("Workspace deleted.");
+      toast.success("Đã xóa không gian làm việc.");
       setDeleteTarget(null);
 
       const nextPage = workspaces.length === 1 && page > 1 ? page - 1 : page;
@@ -144,7 +177,9 @@ export default function WorkspacesPageView() {
       await loadWorkspaces(nextPage, search);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Cannot delete workspace.",
+        error instanceof Error
+          ? error.message
+          : "Không thể xóa không gian làm việc.",
       );
     } finally {
       setIsDeleting(false);
@@ -173,21 +208,21 @@ export default function WorkspacesPageView() {
                   href="/dashboard"
                   className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
-                  ← Back to dashboard
+                  ← Quay lại tổng quan
                 </Link>
 
                 <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Workspace manager
+                  Quản lý không gian làm việc
                 </div>
 
                 <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                  Organize document workspaces
+                  Sắp xếp tài liệu theo không gian làm việc
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                  Group related documents into focused work areas for future
-                  multi-document chat and processing workflows.
+                  Nhóm các tài liệu liên quan vào từng khu vực làm việc riêng để
+                  phục vụ chat nhiều tài liệu và các quy trình xử lý sau này.
                 </p>
               </div>
             </div>
@@ -206,11 +241,11 @@ export default function WorkspacesPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Total workspaces
+                  Tổng không gian
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Saved workspace records
+                  Không gian làm việc đã lưu
                 </p>
               </div>
 
@@ -227,11 +262,11 @@ export default function WorkspacesPageView() {
                 </p>
 
                 <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                  Current page
+                  Trang hiện tại
                 </h3>
 
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Workspace list pagination
+                  Phân trang danh sách không gian
                 </p>
               </div>
             </div>
@@ -243,16 +278,18 @@ export default function WorkspacesPageView() {
             <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  {editingWorkspaceId ? "Edit" : "Create"}
+                  {editingWorkspaceId ? "Chỉnh sửa" : "Tạo mới"}
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-                  {editingWorkspaceId ? "Edit workspace" : "New workspace"}
+                  {editingWorkspaceId
+                    ? "Chỉnh sửa không gian"
+                    : "Không gian mới"}
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Create a focused area for documents that belong to the same
-                  topic, project or workflow.
+                  Tạo một khu vực tập trung cho các tài liệu thuộc cùng chủ đề,
+                  dự án hoặc quy trình làm việc.
                 </p>
               </div>
 
@@ -262,14 +299,14 @@ export default function WorkspacesPageView() {
                     htmlFor="workspace-name"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Workspace name
+                    Tên không gian
                   </label>
 
                   <input
                     id="workspace-name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    placeholder="Product specs, legal docs, sales deck..."
+                    placeholder="Thông số sản phẩm, tài liệu pháp lý, slide bán hàng..."
                     className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   />
                 </div>
@@ -279,7 +316,7 @@ export default function WorkspacesPageView() {
                     htmlFor="workspace-description"
                     className="text-sm font-semibold text-slate-700"
                   >
-                    Description
+                    Mô tả
                   </label>
 
                   <textarea
@@ -287,7 +324,7 @@ export default function WorkspacesPageView() {
                     value={description}
                     onChange={(event) => setDescription(event.target.value)}
                     rows={5}
-                    placeholder="Short note about this workspace..."
+                    placeholder="Ghi chú ngắn về không gian làm việc này..."
                     className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   />
                 </div>
@@ -301,11 +338,11 @@ export default function WorkspacesPageView() {
                   >
                     {submitting
                       ? editingWorkspaceId
-                        ? "Updating..."
-                        : "Creating..."
+                        ? "Đang cập nhật..."
+                        : "Đang tạo..."
                       : editingWorkspaceId
-                        ? "Update workspace"
-                        : "Create workspace"}
+                        ? "Cập nhật không gian"
+                        : "Tạo không gian"}
                   </button>
 
                   {editingWorkspaceId ? (
@@ -314,7 +351,7 @@ export default function WorkspacesPageView() {
                       onClick={resetForm}
                       className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                     >
-                      Cancel
+                      Hủy
                     </button>
                   ) : null}
                 </div>
@@ -326,16 +363,16 @@ export default function WorkspacesPageView() {
             <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Library
+                  Thư viện
                 </p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Workspace list
+                  Danh sách không gian
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Manage workspaces and open a workspace to attach or remove
-                  documents.
+                  Quản lý không gian làm việc và mở từng không gian để thêm hoặc
+                  gỡ tài liệu.
                 </p>
               </div>
 
@@ -344,7 +381,7 @@ export default function WorkspacesPageView() {
                   htmlFor="workspace-search"
                   className="text-sm font-semibold text-slate-700"
                 >
-                  Search
+                  Tìm kiếm
                 </label>
 
                 <div className="flex gap-2">
@@ -357,7 +394,7 @@ export default function WorkspacesPageView() {
                         handleSearchSubmit();
                       }
                     }}
-                    placeholder="Search name or description"
+                    placeholder="Tìm theo tên hoặc mô tả"
                     className="h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                   />
 
@@ -366,7 +403,7 @@ export default function WorkspacesPageView() {
                     onClick={handleSearchSubmit}
                     className="inline-flex h-12 items-center justify-center rounded-2xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
                   >
-                    Search
+                    Tìm
                   </button>
                 </div>
 
@@ -376,7 +413,7 @@ export default function WorkspacesPageView() {
                     onClick={handleResetSearch}
                     className="w-fit text-sm font-semibold text-slate-500 transition hover:text-indigo-700"
                   >
-                    Clear search
+                    Xóa tìm kiếm
                   </button>
                 ) : null}
               </div>
@@ -396,13 +433,13 @@ export default function WorkspacesPageView() {
                 <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-indigo-500" />
 
                 <p className="text-sm font-semibold text-slate-800">
-                  No workspaces found
+                  Không tìm thấy không gian làm việc
                 </p>
 
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
                   {search
-                    ? "Try another keyword or clear the search filter."
-                    : "Create the first workspace to group related documents."}
+                    ? "Hãy thử từ khóa khác hoặc xóa bộ lọc tìm kiếm."
+                    : "Hãy tạo không gian làm việc đầu tiên để nhóm các tài liệu liên quan."}
                 </p>
 
                 {search ? (
@@ -411,7 +448,7 @@ export default function WorkspacesPageView() {
                     onClick={handleResetSearch}
                     className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                   >
-                    Clear search
+                    Xóa tìm kiếm
                   </button>
                 ) : null}
               </div>
@@ -426,7 +463,7 @@ export default function WorkspacesPageView() {
                       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                         <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                            Workspace
+                            Không gian làm việc
                           </p>
 
                           <h3 className="mt-2 truncate text-lg font-semibold tracking-tight text-slate-950">
@@ -434,20 +471,20 @@ export default function WorkspacesPageView() {
                           </h3>
 
                           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                            {workspace.description || "No description"}
+                            {workspace.description || "Chưa có mô tả"}
                           </p>
 
                           <div className="mt-4 flex flex-wrap gap-2">
                             <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
-                              {workspace.documentsCount} documents
+                              {workspace.documentsCount} tài liệu
                             </span>
 
                             <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                              {workspace.readyDocumentsCount} ready
+                              {workspace.readyDocumentsCount} sẵn sàng
                             </span>
 
                             <span className="rounded-full border border-amber-100 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                              {workspace.incompleteDocumentsCount} incomplete
+                              {workspace.incompleteDocumentsCount} chưa hoàn tất
                             </span>
                           </div>
                         </div>
@@ -457,7 +494,7 @@ export default function WorkspacesPageView() {
                             href={`/workspaces/${workspace.id}`}
                             className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
                           >
-                            Open
+                            Mở
                           </Link>
 
                           <button
@@ -465,7 +502,7 @@ export default function WorkspacesPageView() {
                             onClick={() => startEdit(workspace)}
                             className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                           >
-                            Edit
+                            Sửa
                           </button>
 
                           <button
@@ -473,7 +510,7 @@ export default function WorkspacesPageView() {
                             onClick={() => setDeleteTarget(workspace)}
                             className="rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
                           >
-                            Delete
+                            Xóa
                           </button>
                         </div>
                       </div>
@@ -482,14 +519,14 @@ export default function WorkspacesPageView() {
                         <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                           <div className="mb-3 flex items-center justify-between gap-3">
                             <p className="text-sm font-semibold text-slate-800">
-                              Preview documents
+                              Tài liệu xem trước
                             </p>
 
                             <Link
                               href={`/workspaces/${workspace.id}`}
                               className="text-xs font-semibold text-indigo-600 transition hover:text-indigo-700"
                             >
-                              Manage →
+                              Quản lý →
                             </Link>
                           </div>
 
@@ -509,7 +546,7 @@ export default function WorkspacesPageView() {
                                 </div>
 
                                 <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                                  {doc.status}
+                                  {getDocumentStatusLabel(doc.status)}
                                 </span>
                               </div>
                             ))}
@@ -518,7 +555,7 @@ export default function WorkspacesPageView() {
                       ) : null}
 
                       <p className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
-                        Updated{" "}
+                        Cập nhật{" "}
                         <span className="font-medium text-slate-600">
                           {formatDate(workspace.updatedAt)}
                         </span>
@@ -529,11 +566,11 @@ export default function WorkspacesPageView() {
 
                 <div className="mt-6 flex flex-col justify-between gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center">
                   <p className="text-sm text-slate-500">
-                    Page{" "}
+                    Trang{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.page}
                     </span>{" "}
-                    of{" "}
+                    /{" "}
                     <span className="font-semibold text-slate-800">
                       {pagination.totalPages}
                     </span>
@@ -546,7 +583,7 @@ export default function WorkspacesPageView() {
                       disabled={pagination.page <= 1}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Previous
+                      Trước
                     </button>
 
                     <button
@@ -559,7 +596,7 @@ export default function WorkspacesPageView() {
                       disabled={pagination.page >= pagination.totalPages}
                       className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Next
+                      Sau
                     </button>
                   </div>
                 </div>
@@ -571,10 +608,12 @@ export default function WorkspacesPageView() {
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
-        title="Delete workspace?"
-        description={`Workspace "${deleteTarget?.name || ""}" and its document links will be removed.`}
-        confirmText={isDeleting ? "Deleting..." : "Delete workspace"}
-        cancelText="Cancel"
+        title="Xóa không gian làm việc?"
+        description={`Không gian "${
+          deleteTarget?.name || ""
+        }" và các liên kết tài liệu trong không gian này sẽ bị xóa.`}
+        confirmText={isDeleting ? "Đang xóa..." : "Xóa không gian"}
+        cancelText="Hủy"
         tone="danger"
         loading={isDeleting}
         onCancel={() => {

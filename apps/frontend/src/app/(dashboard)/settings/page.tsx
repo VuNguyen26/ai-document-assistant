@@ -4,65 +4,65 @@ import Link from "next/link";
 
 const SETTINGS_GROUPS = [
   {
-    title: "Interface",
-    description: "Display preferences for the dashboard experience.",
+    title: "Giao diện",
+    description: "Tùy chọn hiển thị cho trải nghiệm trong bảng điều khiển.",
     items: [
       {
-        label: "Theme",
-        value: "Light",
-        note: "Dark mode can be added later.",
+        label: "Chủ đề",
+        value: "Sáng",
+        note: "Chế độ tối có thể bổ sung sau.",
       },
       {
-        label: "Accent color",
+        label: "Màu nhấn",
         value: "Indigo",
-        note: "Used across buttons, badges and focus states.",
+        note: "Được dùng cho nút, nhãn trạng thái và hiệu ứng focus.",
       },
       {
-        label: "Density",
-        value: "Comfortable",
-        note: "Balanced spacing for document-heavy workflows.",
-      },
-    ],
-  },
-  {
-    title: "AI workflow",
-    description: "Default behavior for document processing and generated output.",
-    items: [
-      {
-        label: "Chat mode",
-        value: "Grounded",
-        note: "Answers should use processed document chunks.",
-      },
-      {
-        label: "Citations",
-        value: "Enabled",
-        note: "Show sources when relevant chunks are available.",
-      },
-      {
-        label: "Output language",
-        value: "Auto",
-        note: "Can be customized per summary or translation request.",
+        label: "Mật độ hiển thị",
+        value: "Thoải mái",
+        note: "Khoảng cách cân bằng cho các quy trình làm việc nhiều tài liệu.",
       },
     ],
   },
   {
-    title: "Account",
-    description: "Session and access related preferences.",
+    title: "Quy trình AI",
+    description: "Hành vi mặc định khi xử lý tài liệu và tạo đầu ra bằng AI.",
     items: [
       {
-        label: "Authentication",
+        label: "Chế độ chat",
+        value: "Có căn cứ",
+        note: "Câu trả lời nên dựa trên các đoạn nội dung đã xử lý.",
+      },
+      {
+        label: "Trích dẫn",
+        value: "Đã bật",
+        note: "Hiển thị nguồn khi tìm được các đoạn nội dung liên quan.",
+      },
+      {
+        label: "Ngôn ngữ đầu ra",
+        value: "Tự động",
+        note: "Có thể tùy chỉnh riêng khi tạo tóm tắt hoặc bản dịch.",
+      },
+    ],
+  },
+  {
+    title: "Tài khoản",
+    description: "Tùy chọn liên quan đến phiên đăng nhập và quyền truy cập.",
+    items: [
+      {
+        label: "Xác thực",
         value: "JWT",
-        note: "Access token and refresh token are handled by the app.",
+        note: "Access token và refresh token được ứng dụng xử lý.",
       },
       {
-        label: "Role access",
-        value: "User",
-        note: "Admin-specific settings can be added later.",
+        label: "Quyền truy cập",
+        value: "Người dùng",
+        note: "Các cài đặt riêng cho quản trị viên có thể bổ sung sau.",
       },
       {
-        label: "Storage",
-        value: "Local session",
-        note: "Current frontend uses local auth storage.",
+        label: "Lưu trữ",
+        value: "Phiên cục bộ",
+        note: "Frontend hiện đang dùng bộ nhớ xác thực cục bộ.",
       },
     ],
   },
@@ -78,21 +78,21 @@ export default function SettingsPage() {
               href="/dashboard"
               className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
             >
-              ← Back to dashboard
+              ← Quay lại tổng quan
             </Link>
 
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Preferences
+              Tùy chọn hệ thống
             </div>
 
             <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-              Settings
+              Cài đặt
             </h1>
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Review application preferences and the current configuration used
-              across the document assistant workspace.
+              Xem lại các tùy chọn ứng dụng và cấu hình hiện tại đang được sử
+              dụng trong không gian làm việc Document AI Assistant.
             </p>
           </div>
 
@@ -106,15 +106,15 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-3xl font-semibold tracking-tight text-slate-950">
-                Light
+                Sáng
               </p>
 
               <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                Current theme
+                Chủ đề hiện tại
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Clean dashboard interface
+                Giao diện bảng điều khiển gọn gàng
               </p>
             </div>
 
@@ -127,15 +127,15 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-3xl font-semibold tracking-tight text-slate-950">
-                On
+                Bật
               </p>
 
               <h3 className="mt-2 text-sm font-semibold text-slate-900">
-                Grounded answers
+                Câu trả lời có căn cứ
               </h3>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Uses citations when available
+                Sử dụng trích dẫn khi có nguồn phù hợp
               </p>
             </div>
           </div>
@@ -145,37 +145,37 @@ export default function SettingsPage() {
       <section className="grid gap-6 xl:grid-cols-[390px_minmax(0,1fr)]">
         <aside className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Status
+            Trạng thái
           </p>
 
           <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
-            Configuration state
+            Trạng thái cấu hình
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            These settings are currently displayed for review. Backend
-            persistence can be added when user preferences become part of the
-            product scope.
+            Các cài đặt này hiện được hiển thị để xem lại. Phần lưu cấu hình vào
+            backend có thể bổ sung khi tùy chọn người dùng trở thành phạm vi
+            chính thức của sản phẩm.
           </p>
 
           <div className="mt-6 space-y-3">
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
               <p className="text-sm font-semibold text-emerald-800">
-                Interface polished
+                Giao diện đã đồng bộ
               </p>
               <p className="mt-1 text-sm leading-6 text-emerald-700">
-                Dashboard, documents, chat and workspaces share the same visual
-                system.
+                Dashboard, tài liệu, chat và không gian làm việc đang dùng cùng
+                một hệ thống giao diện.
               </p>
             </div>
 
             <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3">
               <p className="text-sm font-semibold text-indigo-800">
-                Ready for future preferences
+                Sẵn sàng mở rộng cài đặt
               </p>
               <p className="mt-1 text-sm leading-6 text-indigo-700">
-                This page can later connect to a settings API without changing
-                the layout.
+                Trang này có thể kết nối với settings API sau mà không cần đổi
+                bố cục.
               </p>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function SettingsPage() {
                 </p>
 
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  {group.title} settings
+                  Cài đặt {group.title}
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">

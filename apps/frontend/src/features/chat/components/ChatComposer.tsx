@@ -34,7 +34,7 @@ export default function ChatComposer({
                   onSend();
                 }
               }}
-              placeholder="Ask a question about this document..."
+              placeholder="Hỏi một câu về tài liệu này..."
               rows={1}
               disabled={isStreaming}
               className="max-h-44 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
@@ -46,14 +46,14 @@ export default function ChatComposer({
               disabled={!canSend}
               className="inline-flex h-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
             >
-              {isStreaming ? "Sending" : "Send"}
+              {isStreaming ? "Đang gửi..." : "Gửi"}
             </button>
           </div>
         </div>
 
         <div className="mt-2 flex flex-col justify-between gap-1 px-1 text-xs text-slate-400 sm:flex-row sm:items-center">
-          <span>Press Enter to send, Shift + Enter for a new line.</span>
-          <span>{input.trim().length} characters</span>
+          <span>Nhấn Enter để gửi, Shift + Enter để xuống dòng.</span>
+          <span>{input.trim().length} ký tự</span>
         </div>
       </div>
     </div>
