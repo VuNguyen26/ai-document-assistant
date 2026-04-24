@@ -563,79 +563,77 @@ export default function TranslationsPageView() {
           </aside>
 
           <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                  Lịch sử
-                </p>
+            <div className="mb-6 space-y-5">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                    Lịch sử
+                  </p>
 
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                  Lịch sử bản dịch
-                </h2>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                    Lịch sử bản dịch
+                  </h2>
 
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  Xem lại các bản dịch đã tạo và sao chép kết quả để tái sử
-                  dụng.
-                </p>
-              </div>
-
-              <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
-                <div className="space-y-2 sm:w-72">
-                  <label
-                    htmlFor="translation-filter-document"
-                    className="text-sm font-semibold text-slate-700"
-                  >
-                    Lọc theo tài liệu
-                  </label>
-
-                  <select
-                    id="translation-filter-document"
-                    value={filterDocumentId}
-                    onChange={(event) => {
-                      setFilterDocumentId(event.target.value);
-                      setPage(1);
-                    }}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                  >
-                    <option value="">Tất cả tài liệu</option>
-                    {documents.map((doc) => (
-                      <option key={doc.id} value={doc.id}>
-                        {doc.title}
-                      </option>
-                    ))}
-                  </select>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                    Xem lại các bản dịch đã tạo và sao chép kết quả để tái sử dụng.
+                  </p>
                 </div>
 
-                <div className="space-y-2 sm:w-56">
-                  <label
-                    htmlFor="translation-filter-source-type"
-                    className="text-sm font-semibold text-slate-700"
-                  >
-                    Lọc theo nguồn
-                  </label>
+                <div className="grid w-full gap-4 md:grid-cols-2">
+                  <div className="min-w-0 space-y-2">
+                    <label
+                      htmlFor="translation-filter-document"
+                      className="text-sm font-semibold text-slate-700"
+                    >
+                      Lọc theo tài liệu
+                    </label>
 
-                  <select
-                    id="translation-filter-source-type"
-                    value={filterSourceType}
-                    onChange={(event) => {
-                      setFilterSourceType(
-                        (event.target.value as TranslationSourceType | "") ||
-                          "",
-                      );
-                      setPage(1);
-                    }}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                  >
-                    <option value="">Tất cả nguồn</option>
-                    {SOURCE_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      id="translation-filter-document"
+                      value={filterDocumentId}
+                      onChange={(event) => {
+                        setFilterDocumentId(event.target.value);
+                        setPage(1);
+                      }}
+                      className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                    >
+                      <option value="">Tất cả tài liệu</option>
+                      {documents.map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="min-w-0 space-y-2">
+                    <label
+                      htmlFor="translation-filter-source-type"
+                      className="text-sm font-semibold text-slate-700"
+                    >
+                      Lọc theo nguồn
+                    </label>
+
+                    <select
+                      id="translation-filter-source-type"
+                      value={filterSourceType}
+                      onChange={(event) => {
+                        setFilterSourceType(
+                          (event.target.value as TranslationSourceType | "") || "",
+                        );
+                        setPage(1);
+                      }}
+                      className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                    >
+                      <option value="">Tất cả nguồn</option>
+                      {SOURCE_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
             {loading ? (
               <div className="space-y-4">
