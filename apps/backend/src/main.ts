@@ -3,39 +3,50 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-function parseAllowedOrigins(frontendUrl?: string) {
-  return [
-    frontendUrl,
-    process.env.FRONTEND_URL,
+function normalizeOrigin(origin: string) {
+  return origin.replace(/\/$/, '');
+}
+
+function isAllowedOrigin(origin?: string) {
+  if (!origin) return true;
+
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  const allowedOrigins = [
     'http://localhost:3000',
+    process.env.FRONTEND_URL,
     'https://ai-document-assistant-tau.vercel.app',
   ]
     .filter(Boolean)
-    .map((origin) => origin!.replace(/\/$/, ''));
+    .map((item) => normalizeOrigin(item!));
+
+  if (allowedOrigins.includes(normalizedOrigin)) {
+    return true;
+  }
+
+  try {
+    const url = new URL(normalizedOrigin);
+
+    if (url.hostname === 'vercel.app' || url.hostname.endsWith('.vercel.app')) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
 }
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('app.port') ?? Number(process.env.PORT) ?? 4000;
-  const frontendUrl =
-    configService.get<string>('app.frontendUrl') ??
-    process.env.FRONTEND_URL ??
-    'http://localhost:3000';
-
-  const allowedOrigins = parseAllowedOrigins(frontendUrl);
+  const port =
+    configService.get<number>('app.port') ?? Number(process.env.PORT) ?? 4000;
 
   app.enableCors({
     origin(origin, callback) {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
-
-      const normalizedOrigin = origin.replace(/\/$/, '');
-
-      if (allowedOrigins.includes(normalizedOrigin)) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }
@@ -43,6 +54,8 @@ async function bootstrap() {
       callback(new Error(`CORS blocked for origin: ${origin}`));
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.setGlobalPrefix('api/v1');
@@ -61,7 +74,7 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   console.log(`Backend running at http://0.0.0.0:${port}/api/v1`);
-  console.log(`Allowed CORS origins: ${allowedOrigins.join(', ')}`);
+  console.log(`FRONTEND_URL=${process.env.FRONTEND_URL || 'not set'}`);
 }
 
 bootstrap();
