@@ -48,7 +48,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
     <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
               Upload
             </p>
@@ -62,7 +62,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             </p>
           </div>
 
-          <span className="hidden rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 sm:inline-flex">
+          <span className="hidden shrink-0 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 sm:inline-flex">
             PDF · DOCX · TXT
           </span>
         </div>
@@ -97,7 +97,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
 
           <label
             htmlFor="document-file"
-            className="block cursor-pointer rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-5 py-6 transition hover:border-indigo-300 hover:bg-indigo-50/40"
+            className="block cursor-pointer rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 p-4 transition hover:border-indigo-300 hover:bg-indigo-50/40"
           >
             <input
               ref={inputRef}
@@ -110,8 +110,8 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
             />
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-slate-900">
                   {file ? file.name : "Choose a document"}
                 </p>
 
@@ -122,7 +122,7 @@ export default function UploadDocument({ onUploaded }: UploadDocumentProps) {
                 </p>
               </div>
 
-              <span className="inline-flex w-fit items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700">
+              <span className="inline-flex w-full shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-200 hover:text-indigo-700 sm:w-auto">
                 Browse file
               </span>
             </div>
