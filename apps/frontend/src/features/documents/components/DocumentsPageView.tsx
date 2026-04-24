@@ -311,7 +311,7 @@ export default function DocumentsPageView() {
                       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
                         {hasFilters
                           ? "Hãy thử đổi từ khóa, trạng thái hoặc kiểu sắp xếp."
-                          : "Anh có thể upload tài liệu đầu tiên để bắt đầu."}
+                          : "Bạn có thể upload tài liệu đầu tiên để bắt đầu."}
                       </p>
 
                       {hasFilters ? (

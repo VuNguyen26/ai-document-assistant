@@ -6,7 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 // SỬA dòng import này theo đúng vị trí PrismaService của project anh
 import { PrismaService } from '../../../libs/prisma/prisma.service';
-// Ví dụ khác nếu project anh để ở src/prisma:
+// Ví dụ khác nếu project để ở src/prisma:
 // import { PrismaService } from '../../../prisma/prisma.service';
 
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';

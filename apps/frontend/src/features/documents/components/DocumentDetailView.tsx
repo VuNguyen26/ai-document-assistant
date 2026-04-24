@@ -215,7 +215,7 @@ function getRecommendedAction(status: string) {
       return {
         title: "Khuyến nghị: Chat với tài liệu",
         description:
-          "Document đã sẵn sàng. Anh có thể bắt đầu chat hoặc reprocess nếu muốn xử lý lại từ đầu.",
+          "Document đã sẵn sàng. Bạn có thể bắt đầu chat hoặc reprocess nếu muốn xử lý lại từ đầu.",
         tone: "emerald" as const,
       };
     default:
@@ -430,7 +430,7 @@ export default function DocumentDetailView({
             Không tìm thấy tài liệu
           </h1>
           <p className="mt-3 text-sm text-slate-500">
-            Tài liệu này có thể đã bị xóa hoặc anh không có quyền truy cập.
+            Tài liệu này có thể đã bị xóa hoặc bạn không có quyền truy cập.
           </p>
           <button
             type="button"
@@ -558,7 +558,7 @@ export default function DocumentDetailView({
 
               {!isReady ? (
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  Anh có thể bấm <strong>Process document</strong> để hệ thống tự
+                  Bạn có thể bấm <strong>Process document</strong> để hệ thống tự
                   chạy đủ 3 bước: Extract → Chunk → Embed.
                 </div>
               ) : (
@@ -969,7 +969,7 @@ export default function DocumentDetailView({
       <ConfirmDialog
         open={reprocessDialogOpen}
         title="Reprocess tài liệu từ đầu?"
-        description="Hành động này sẽ xóa extracted content, chunks và embeddings hiện tại rồi chạy lại toàn bộ pipeline. Chỉ dùng khi anh thật sự muốn xử lý lại tài liệu."
+        description="Hành động này sẽ xóa extracted content, chunks và embeddings hiện tại rồi chạy lại toàn bộ pipeline. Chỉ dùng khi bạn thật sự muốn xử lý lại tài liệu."
         confirmText={actionLoading === "reprocess" ? "Đang reprocess..." : "Reprocess từ đầu"}
         cancelText="Hủy"
         tone="danger"

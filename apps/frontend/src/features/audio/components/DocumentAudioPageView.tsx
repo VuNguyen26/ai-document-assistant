@@ -151,7 +151,7 @@ export default function DocumentAudioPageView({
 
   async function handleGenerate() {
     if (sourceType === 'SUMMARY' && !summaryId) {
-      toast.error('Anh cần chọn summary trước.');
+      toast.error('Bạn cần chọn summary trước.');
       return;
     }
 
