@@ -144,7 +144,7 @@ export default function PublicLayout({ children }: PublicLayoutProps) {
               </p>
 
               <h1 className="text-5xl font-semibold leading-[1.06] tracking-[-0.045em] text-slate-950 xl:text-6xl">
-                Biến tài liệu thành tri thức AI có thể sử dụng.
+                 Turn documents into usable AI knowledge.
               </h1>
 
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 xl:text-lg">
