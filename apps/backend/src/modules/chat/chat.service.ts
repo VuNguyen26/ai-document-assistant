@@ -95,7 +95,11 @@ export class ChatService {
     const effectiveWorkspaceId =
       dto.workspaceId ?? existingSession?.workspaceId ?? undefined;
 
-    await this.assertChatScope(userId, effectiveDocumentId, effectiveWorkspaceId);
+    await this.assertChatScope(
+      userId,
+      effectiveDocumentId,
+      effectiveWorkspaceId,
+    );
 
     const sessionId =
       existingSession?.id ??
@@ -121,7 +125,9 @@ export class ChatService {
       answer = await this.generateAnswer(question, context);
     }
 
-    const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
+    const documentIds = [
+      ...new Set(usedChunks.map((chunk) => chunk.documentId)),
+    ];
 
     await this.persistConversation({
       sessionId,
@@ -808,7 +814,11 @@ export class ChatService {
     const effectiveWorkspaceId =
       dto.workspaceId ?? existingSession?.workspaceId ?? undefined;
 
-    await this.assertChatScope(userId, effectiveDocumentId, effectiveWorkspaceId);
+    await this.assertChatScope(
+      userId,
+      effectiveDocumentId,
+      effectiveWorkspaceId,
+    );
 
     const sessionId =
       existingSession?.id ??
@@ -825,7 +835,9 @@ export class ChatService {
     });
 
     const usedChunks = searchResult.results;
-    const documentIds = [...new Set(usedChunks.map((chunk) => chunk.documentId))];
+    const documentIds = [
+      ...new Set(usedChunks.map((chunk) => chunk.documentId)),
+    ];
 
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');

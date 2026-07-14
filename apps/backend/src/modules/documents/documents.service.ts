@@ -151,42 +151,48 @@ export class DocumentsService {
       [sortBy]: sortOrder,
     } as Prisma.DocumentOrderByWithRelationInput;
 
-    const [documents, filteredTotal, totalAll, readyCount, failedCount, incompleteCount] =
-      await Promise.all([
-        this.prisma.document.findMany({
-          where: filteredWhere,
-          orderBy,
-          skip,
-          take: limit,
-          select: DOCUMENT_SELECT,
-        }),
-        this.prisma.document.count({
-          where: filteredWhere,
-        }),
-        this.prisma.document.count({
-          where: baseWhere,
-        }),
-        this.prisma.document.count({
-          where: {
-            ...baseWhere,
-            status: DocumentStatus.READY,
+    const [
+      documents,
+      filteredTotal,
+      totalAll,
+      readyCount,
+      failedCount,
+      incompleteCount,
+    ] = await Promise.all([
+      this.prisma.document.findMany({
+        where: filteredWhere,
+        orderBy,
+        skip,
+        take: limit,
+        select: DOCUMENT_SELECT,
+      }),
+      this.prisma.document.count({
+        where: filteredWhere,
+      }),
+      this.prisma.document.count({
+        where: baseWhere,
+      }),
+      this.prisma.document.count({
+        where: {
+          ...baseWhere,
+          status: DocumentStatus.READY,
+        },
+      }),
+      this.prisma.document.count({
+        where: {
+          ...baseWhere,
+          status: DocumentStatus.FAILED,
+        },
+      }),
+      this.prisma.document.count({
+        where: {
+          ...baseWhere,
+          status: {
+            in: INCOMPLETE_STATUSES,
           },
-        }),
-        this.prisma.document.count({
-          where: {
-            ...baseWhere,
-            status: DocumentStatus.FAILED,
-          },
-        }),
-        this.prisma.document.count({
-          where: {
-            ...baseWhere,
-            status: {
-              in: INCOMPLETE_STATUSES,
-            },
-          },
-        }),
-      ]);
+        },
+      }),
+    ]);
 
     const latestJobs = await this.findLatestJobsForDocuments(
       userId,
@@ -316,7 +322,10 @@ export class DocumentsService {
     return document;
   }
 
-  private async findLatestJobsForDocuments(userId: string, documentIds: string[]) {
+  private async findLatestJobsForDocuments(
+    userId: string,
+    documentIds: string[],
+  ) {
     if (documentIds.length === 0) {
       return new Map<string, LatestJob>();
     }

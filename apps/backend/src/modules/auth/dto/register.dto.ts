@@ -1,14 +1,19 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
+import {
+  normalizeEmail,
+  trimString,
+} from '../../../common/transforms/value.transforms';
+
 export class RegisterDto {
-  @Transform(({ value }) => value?.trim())
+  @Transform(trimString)
   @IsString()
   @MinLength(2, { message: 'Họ tên phải có ít nhất 2 ký tự' })
   @MaxLength(100, { message: 'Họ tên quá dài' })
   fullName!: string;
 
-  @Transform(({ value }) => value?.trim().toLowerCase())
+  @Transform(normalizeEmail)
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email!: string;
 

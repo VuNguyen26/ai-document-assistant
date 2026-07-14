@@ -57,9 +57,7 @@ export class SummariesService {
     }
 
     const sourceText =
-      document.content?.cleanedText ||
-      document.content?.extractedText ||
-      '';
+      document.content?.cleanedText || document.content?.extractedText || '';
 
     if (!sourceText.trim()) {
       throw new BadRequestException(

@@ -81,7 +81,10 @@ export class AuthService {
       throw new ForbiddenException('Tài khoản chưa hoạt động hoặc đã bị khóa');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
@@ -124,7 +127,10 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token đã hết hạn');
     }
 
-    const isTokenMatch = await bcrypt.compare(refreshToken, storedToken.tokenHash);
+    const isTokenMatch = await bcrypt.compare(
+      refreshToken,
+      storedToken.tokenHash,
+    );
 
     if (!isTokenMatch) {
       await this.prisma.refreshToken.update({
@@ -166,7 +172,10 @@ export class AuthService {
         return { message: 'Đăng xuất thành công' };
       }
 
-      const isTokenMatch = await bcrypt.compare(refreshToken, storedToken.tokenHash);
+      const isTokenMatch = await bcrypt.compare(
+        refreshToken,
+        storedToken.tokenHash,
+      );
 
       if (!isTokenMatch) {
         return { message: 'Đăng xuất thành công' };
@@ -208,7 +217,11 @@ export class AuthService {
     prismaClient: PrismaClientLike = this.prisma,
   ) {
     const accessToken = await this.signAccessToken(user);
-    const refresh = await this.createRefreshToken(user.id, requestMeta, prismaClient);
+    const refresh = await this.createRefreshToken(
+      user.id,
+      requestMeta,
+      prismaClient,
+    );
 
     return {
       user,
@@ -270,7 +283,9 @@ export class AuthService {
     return { token };
   }
 
-  private async verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
+  private async verifyRefreshToken(
+    token: string,
+  ): Promise<RefreshTokenPayload> {
     try {
       const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(
         token,

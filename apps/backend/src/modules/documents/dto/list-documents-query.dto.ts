@@ -10,15 +10,20 @@ import {
   Min,
 } from 'class-validator';
 
+import {
+  numberWithDefault,
+  trimString,
+} from '../../../common/transforms/value.transforms';
+
 export class ListDocumentsQueryDto {
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : 1))
+  @Transform(numberWithDefault(1))
   @IsInt({ message: 'page phải là số nguyên' })
   @Min(1, { message: 'page phải >= 1' })
   page?: number = 1;
 
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : 10))
+  @Transform(numberWithDefault(10))
   @IsInt({ message: 'limit phải là số nguyên' })
   @Min(1, { message: 'limit phải >= 1' })
   @Max(100, { message: 'limit không được > 100' })
@@ -26,9 +31,7 @@ export class ListDocumentsQueryDto {
 
   @IsOptional()
   @IsString({ message: 'search phải là chuỗi' })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @Transform(trimString)
   search?: string;
 
   @IsOptional()

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -94,13 +94,14 @@ async function copyToClipboard(value: string, successMessage: string) {
 export default function SummariesPageView() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [summaries, setSummaries] = useState<SummaryItem[]>([]);
-  const [pagination, setPagination] =
-    useState<SummariesListResponse["pagination"]>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    SummariesListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -131,29 +132,29 @@ export default function SummariesPageView() {
     }
   }
 
-  async function loadSummaries(
-    nextPage = page,
-    nextDocumentId = filterDocumentId,
-  ) {
-    try {
-      setLoading(true);
+  const loadSummaries = useCallback(
+    async (nextPage = page, nextDocumentId = filterDocumentId) => {
+      try {
+        setLoading(true);
 
-      const data = await getSummaries({
-        page: nextPage,
-        limit: PAGE_SIZE,
-        documentId: nextDocumentId || undefined,
-      });
+        const data = await getSummaries({
+          page: nextPage,
+          limit: PAGE_SIZE,
+          documentId: nextDocumentId || undefined,
+        });
 
-      setSummaries(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Không thể tải bản tóm tắt.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+        setSummaries(data.items);
+        setPagination(data.pagination);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Không thể tải bản tóm tắt.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, filterDocumentId],
+  );
 
   async function handleGenerateSummary() {
     if (!documentId) {
@@ -211,7 +212,7 @@ export default function SummariesPageView() {
 
   useEffect(() => {
     void loadSummaries(page, filterDocumentId);
-  }, [page, filterDocumentId]);
+  }, [loadSummaries, page, filterDocumentId]);
 
   const selectedDocument = useMemo(
     () => documents.find((doc) => doc.id === documentId) || null,

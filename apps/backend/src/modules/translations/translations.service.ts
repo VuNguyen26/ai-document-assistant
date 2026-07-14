@@ -78,16 +78,14 @@ export class TranslationsService {
     const targetLanguage = dto.targetLanguage.trim();
     const style = dto.style?.trim() || null;
 
-    let sourceId: string | null = dto.sourceId?.trim() || null;
+    const sourceId: string | null = dto.sourceId?.trim() || null;
     let sourceText = '';
     let sourceLanguage = dto.sourceLanguage?.trim() || '';
     let summaryLookup: SummaryLookup | null = null;
 
     if (sourceType === 'DOCUMENT') {
       sourceText =
-        document.content?.cleanedText ||
-        document.content?.extractedText ||
-        '';
+        document.content?.cleanedText || document.content?.extractedText || '';
       sourceLanguage = sourceLanguage || document.sourceLanguage || 'auto';
     } else {
       if (!sourceId) {
@@ -247,7 +245,7 @@ export class TranslationsService {
       items: items.map((item) =>
         this.serializeTranslation(
           item,
-          item.sourceId ? summaryMap.get(item.sourceId) ?? null : null,
+          item.sourceId ? (summaryMap.get(item.sourceId) ?? null) : null,
         ),
       ),
       pagination: {
@@ -331,7 +329,9 @@ export class TranslationsService {
       const translated = response.choices?.[0]?.message?.content?.trim();
 
       if (!translated) {
-        throw new InternalServerErrorException('LLM returned empty translation');
+        throw new InternalServerErrorException(
+          'LLM returned empty translation',
+        );
       }
 
       return translated;

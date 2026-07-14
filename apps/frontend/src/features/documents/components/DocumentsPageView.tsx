@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -63,13 +63,14 @@ export default function DocumentsPageView() {
     failed: 0,
     incomplete: 0,
   });
-  const [pagination, setPagination] =
-    useState<DocumentsListResponse["pagination"]>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    DocumentsListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<DocumentItem | null>(null);
@@ -84,38 +85,41 @@ export default function DocumentsPageView() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
-  async function loadDocuments(
-    nextPage = page,
-    nextSearch = debouncedSearch,
-    nextStatus = status,
-    nextSortBy = sortBy,
-    nextSortOrder = sortOrder,
-  ) {
-    try {
-      setLoading(true);
+  const loadDocuments = useCallback(
+    async (
+      nextPage = page,
+      nextSearch = debouncedSearch,
+      nextStatus = status,
+      nextSortBy = sortBy,
+      nextSortOrder = sortOrder,
+    ) => {
+      try {
+        setLoading(true);
 
-      const data = await getDocuments({
-        page: nextPage,
-        limit: PAGE_SIZE,
-        search: nextSearch,
-        status: nextStatus,
-        sortBy: nextSortBy,
-        sortOrder: nextSortOrder,
-      });
+        const data = await getDocuments({
+          page: nextPage,
+          limit: PAGE_SIZE,
+          search: nextSearch,
+          status: nextStatus,
+          sortBy: nextSortBy,
+          sortOrder: nextSortOrder,
+        });
 
-      setDocuments(data.items);
-      setPagination(data.pagination);
-      setSummary(data.summary);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải danh sách tài liệu",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+        setDocuments(data.items);
+        setPagination(data.pagination);
+        setSummary(data.summary);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách tài liệu",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, debouncedSearch, status, sortBy, sortOrder],
+  );
 
   async function confirmDelete() {
     if (!deleteTarget) return;
@@ -158,8 +162,8 @@ export default function DocumentsPageView() {
   }, [debouncedSearch, status, sortBy, sortOrder]);
 
   useEffect(() => {
-    loadDocuments(page, debouncedSearch, status, sortBy, sortOrder);
-  }, [page, debouncedSearch, status, sortBy, sortOrder]);
+    void loadDocuments(page, debouncedSearch, status, sortBy, sortOrder);
+  }, [loadDocuments, page, debouncedSearch, status, sortBy, sortOrder]);
 
   const hasFilters = useMemo(() => {
     return (

@@ -24,7 +24,7 @@ export class HealthService {
         database: 'up',
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       throw new ServiceUnavailableException({
         status: 'error',
         service: 'ai-document-assistant-backend',

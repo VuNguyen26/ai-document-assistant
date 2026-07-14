@@ -84,11 +84,16 @@ export class DocumentProcessingJobsService
     page = 1,
     limit = 10,
   ) {
-    await this.documentPipelineService.findOwnedDocumentOrThrow(userId, documentId);
+    await this.documentPipelineService.findOwnedDocumentOrThrow(
+      userId,
+      documentId,
+    );
 
     const skip = (page - 1) * limit;
 
-    const items = await this.prisma.$queryRawUnsafe<DocumentProcessingJobRecord[]>(
+    const items = await this.prisma.$queryRawUnsafe<
+      DocumentProcessingJobRecord[]
+    >(
       `
         SELECT
           id,
@@ -116,7 +121,9 @@ export class DocumentProcessingJobsService
       limit,
     );
 
-    const totalRows = await this.prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+    const totalRows = await this.prisma.$queryRawUnsafe<
+      Array<{ count: bigint }>
+    >(
       `
         SELECT COUNT(*)::bigint AS count
         FROM document_processing_jobs
@@ -140,7 +147,9 @@ export class DocumentProcessingJobsService
   }
 
   async getLatestJobForDocument(userId: string, documentId: string) {
-    const rows = await this.prisma.$queryRawUnsafe<DocumentProcessingJobRecord[]>(
+    const rows = await this.prisma.$queryRawUnsafe<
+      DocumentProcessingJobRecord[]
+    >(
       `
         SELECT
           id,
@@ -174,7 +183,10 @@ export class DocumentProcessingJobsService
     documentId: string,
     type: DocumentProcessingJobType,
   ) {
-    await this.documentPipelineService.findOwnedDocumentOrThrow(userId, documentId);
+    await this.documentPipelineService.findOwnedDocumentOrThrow(
+      userId,
+      documentId,
+    );
 
     const existingActiveJob = await this.prisma.$queryRawUnsafe<
       DocumentProcessingJobRecord[]
@@ -215,7 +227,9 @@ export class DocumentProcessingJobsService
 
     await this.documentPipelineService.markDocumentQueued(documentId);
 
-    const rows = await this.prisma.$queryRawUnsafe<DocumentProcessingJobRecord[]>(
+    const rows = await this.prisma.$queryRawUnsafe<
+      DocumentProcessingJobRecord[]
+    >(
       `
         INSERT INTO document_processing_jobs (
           id,
@@ -275,7 +289,9 @@ export class DocumentProcessingJobsService
   }
 
   private async claimNextJob() {
-    const nextJobs = await this.prisma.$queryRawUnsafe<DocumentProcessingJobRecord[]>(
+    const nextJobs = await this.prisma.$queryRawUnsafe<
+      DocumentProcessingJobRecord[]
+    >(
       `
         SELECT
           id,
@@ -325,7 +341,9 @@ export class DocumentProcessingJobsService
       return null;
     }
 
-    const claimedRows = await this.prisma.$queryRawUnsafe<DocumentProcessingJobRecord[]>(
+    const claimedRows = await this.prisma.$queryRawUnsafe<
+      DocumentProcessingJobRecord[]
+    >(
       `
         SELECT
           id,
@@ -384,7 +402,10 @@ export class DocumentProcessingJobsService
       const message =
         error instanceof Error ? error.message : 'Unknown background job error';
 
-      await this.documentPipelineService.markDocumentFailed(job.documentId, message);
+      await this.documentPipelineService.markDocumentFailed(
+        job.documentId,
+        message,
+      );
 
       if (attempts < job.maxAttempts) {
         const retryAt = new Date(Date.now() + attempts * 5000);
@@ -429,7 +450,9 @@ export class DocumentProcessingJobsService
         message,
       );
 
-      this.logger.error(`Document job ${job.id} failed permanently: ${message}`);
+      this.logger.error(
+        `Document job ${job.id} failed permanently: ${message}`,
+      );
     }
   }
 }

@@ -7,4 +7,4 @@ export interface UploadedFile {
   filename: string;
   path: string;
   size: number;
-}   
+}

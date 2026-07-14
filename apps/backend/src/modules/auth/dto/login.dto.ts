@@ -1,8 +1,10 @@
 import { Transform } from 'class-transformer';
 import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
+import { normalizeEmail } from '../../../common/transforms/value.transforms';
+
 export class LoginDto {
-  @Transform(({ value }) => value?.trim().toLowerCase())
+  @Transform(normalizeEmail)
   @IsEmail({}, { message: 'Email không hợp lệ' })
   email!: string;
 

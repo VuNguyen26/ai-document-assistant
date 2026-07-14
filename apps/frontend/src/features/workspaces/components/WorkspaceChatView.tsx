@@ -10,9 +10,12 @@ import {
 } from "@/features/chat/api/chat.api";
 import ChatCitations from "@/features/chat/components/ChatCitations";
 import MarkdownMessage from "@/features/chat/components/MarkdownMessage";
-import type { ChatMessage, ChatSession } from "@/features/chat/types/chat.types";
+import type {
+  ChatMessage,
+  ChatSession,
+} from "@/features/chat/types/chat.types";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import { getWorkspaceById } from "../api/workspaces.api";
@@ -78,50 +81,53 @@ export default function WorkspaceChatView({
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  async function loadWorkspace() {
+  const loadWorkspace = useCallback(async () => {
     const data = await getWorkspaceById(workspaceId);
     setWorkspace(data);
-  }
+  }, [workspaceId]);
 
-  async function loadSessions(selectLatest = false) {
-    try {
-      setLoadingSessions(true);
+  const loadSessions = useCallback(
+    async (selectLatest = false) => {
+      try {
+        setLoadingSessions(true);
 
-      const result = await getChatSessions({
-        page: 1,
-        limit: 50,
-        workspaceId,
-      });
+        const result = await getChatSessions({
+          page: 1,
+          limit: 50,
+          workspaceId,
+        });
 
-      setSessions(result.data);
+        setSessions(result.data);
 
-      if (result.data.length === 0) {
-        setActiveSessionId(null);
-        setMessages([]);
-        return;
-      }
-
-      if (selectLatest || !activeSessionId) {
-        setActiveSessionId(result.data[0].id);
-      } else {
-        const stillExists = result.data.some(
-          (item) => item.id === activeSessionId,
-        );
-
-        if (!stillExists) {
-          setActiveSessionId(result.data[0].id);
+        if (result.data.length === 0) {
+          setActiveSessionId(null);
+          setMessages([]);
+          return;
         }
+
+        setActiveSessionId((currentSessionId) => {
+          if (selectLatest || !currentSessionId) {
+            return result.data[0].id;
+          }
+
+          const stillExists = result.data.some(
+            (item) => item.id === currentSessionId,
+          );
+
+          return stillExists ? currentSessionId : result.data[0].id;
+        });
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách phiên chat.",
+        );
+      } finally {
+        setLoadingSessions(false);
       }
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải danh sách phiên chat.",
-      );
-    } finally {
-      setLoadingSessions(false);
-    }
-  }
+    },
+    [workspaceId],
+  );
 
   async function loadMessages(sessionId: string) {
     try {
@@ -154,7 +160,7 @@ export default function WorkspaceChatView({
     }
 
     void bootstrap();
-  }, [workspaceId]);
+  }, [loadSessions, loadWorkspace]);
 
   useEffect(() => {
     if (!activeSessionId) {
@@ -193,7 +199,9 @@ export default function WorkspaceChatView({
       await loadSessions(false);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Không thể đổi tên phiên chat.",
+        error instanceof Error
+          ? error.message
+          : "Không thể đổi tên phiên chat.",
       );
     }
   }
@@ -228,7 +236,9 @@ export default function WorkspaceChatView({
     setQuestion("");
     setRenamingSessionId(null);
     setRenameValue("");
-    toast.success("Sẵn sàng cho cuộc trò chuyện mới trong không gian làm việc.");
+    toast.success(
+      "Sẵn sàng cho cuộc trò chuyện mới trong không gian làm việc.",
+    );
   }
 
   async function handleSendQuestion() {
@@ -245,9 +255,7 @@ export default function WorkspaceChatView({
     }
 
     if (workspace.readyDocumentsCount === 0) {
-      toast.error(
-        "Không gian làm việc này chưa có tài liệu sẵn sàng để chat.",
-      );
+      toast.error("Không gian làm việc này chưa có tài liệu sẵn sàng để chat.");
       return;
     }
 
@@ -356,7 +364,8 @@ export default function WorkspaceChatView({
         </h1>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy cập.
+          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy
+          cập.
         </p>
 
         <Link
@@ -713,7 +722,9 @@ export default function WorkspaceChatView({
 
                                 <p
                                   className={`text-xs font-semibold uppercase tracking-[0.16em] ${
-                                    isUser ? "text-indigo-100" : "text-slate-400"
+                                    isUser
+                                      ? "text-indigo-100"
+                                      : "text-slate-400"
                                   }`}
                                 >
                                   {isUser ? "Bạn" : "Trợ lý"}
@@ -811,7 +822,9 @@ export default function WorkspaceChatView({
                         rows={1}
                         aria-label="Nhập câu hỏi cho không gian làm việc"
                         placeholder="Hỏi trên tất cả tài liệu đã sẵn sàng..."
-                        disabled={workspace.readyDocumentsCount === 0 || sending}
+                        disabled={
+                          workspace.readyDocumentsCount === 0 || sending
+                        }
                         className="max-h-44 min-h-12 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
                       />
 

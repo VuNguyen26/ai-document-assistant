@@ -1,73 +1,62 @@
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import type { NextFunction, Request, Response } from 'express';
+
 import { AppModule } from './app.module';
 
-function getAllowedOrigin(origin?: string) {
-  if (!origin) return '*';
+const bootstrapLogger = new Logger('Bootstrap');
 
-  const allowedOrigins = [
+type CorsOriginCallback = (error: Error | null, allow?: boolean) => void;
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/, '');
+}
+
+function getAllowedOrigins(): Set<string> {
+  const configuredOrigins = [
     'http://localhost:3000',
     'https://ai-document-assistant-tau.vercel.app',
     process.env.FRONTEND_URL,
+    process.env.CORS_ORIGINS,
   ]
-    .filter(Boolean)
-    .map((item) => item!.replace(/\/$/, ''));
+    .flatMap((value) => value?.split(',') ?? [])
+    .map(normalizeOrigin)
+    .filter((origin) => origin.length > 0);
 
-  const normalizedOrigin = origin.replace(/\/$/, '');
-
-  if (allowedOrigins.includes(normalizedOrigin)) {
-    return origin;
-  }
-
-  try {
-    const url = new URL(normalizedOrigin);
-
-    if (url.hostname === 'vercel.app' || url.hostname.endsWith('.vercel.app')) {
-      return origin;
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
+  return new Set(configuredOrigins);
 }
 
-async function bootstrap() {
+function resolvePort(value: unknown): number {
+  const port = typeof value === 'number' ? value : Number(value);
+
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    return 4000;
+  }
+
+  return port;
+}
+
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-
   const configService = app.get(ConfigService);
-  const port =
-    configService.get<number>('app.port') ?? Number(process.env.PORT) ?? 4000;
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin;
-    const allowedOrigin = getAllowedOrigin(origin);
-
-    if (allowedOrigin) {
-      res.header('Access-Control-Allow-Origin', allowedOrigin);
-      res.header('Vary', 'Origin');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header(
-        'Access-Control-Allow-Methods',
-        'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      );
-      res.header(
-        'Access-Control-Allow-Headers',
-        'Content-Type, Authorization, Accept, Origin, X-Requested-With',
-      );
-    }
-
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(204);
-    }
-
-    return next();
-  });
+  const port = resolvePort(
+    configService.get<unknown>('app.port') ?? process.env.PORT,
+  );
+  const allowedOrigins = getAllowedOrigins();
 
   app.enableCors({
-    origin: true,
+    origin: (
+      origin: string | undefined,
+      callback: CorsOriginCallback,
+    ): void => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, allowedOrigins.has(normalizeOrigin(origin)));
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -94,8 +83,16 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
 
-  console.log(`Backend running at http://0.0.0.0:${port}/api/v1`);
-  console.log('CORS mode: manual preflight middleware enabled');
+  bootstrapLogger.log(`Backend running at http://0.0.0.0:${port}/api/v1`);
+  bootstrapLogger.log(
+    `CORS enabled for ${allowedOrigins.size} configured origin(s)`,
+  );
 }
 
-bootstrap();
+void bootstrap().catch((error: unknown) => {
+  const details =
+    error instanceof Error ? (error.stack ?? error.message) : String(error);
+
+  bootstrapLogger.error('Backend failed to start', details);
+  process.exitCode = 1;
+});

@@ -94,20 +94,18 @@ export class AudioService {
     }
 
     const sourceType = dto.sourceType;
-    const voiceName = (dto.voiceName?.trim() || DEFAULT_VOICE) as string;
+    const voiceName = dto.voiceName?.trim() || DEFAULT_VOICE;
     const speed = dto.speed ?? DEFAULT_SPEED;
     const instructions = dto.instructions?.trim() || undefined;
 
-    let sourceId: string | null = dto.sourceId?.trim() || null;
+    const sourceId: string | null = dto.sourceId?.trim() || null;
     let sourceText = '';
     let language = dto.language?.trim() || document.sourceLanguage || 'auto';
     let summaryLookup: SummaryLookup | null = null;
 
     if (sourceType === 'DOCUMENT') {
       sourceText =
-        document.content?.cleanedText ||
-        document.content?.extractedText ||
-        '';
+        document.content?.cleanedText || document.content?.extractedText || '';
     } else {
       if (!sourceId) {
         throw new BadRequestException(
@@ -279,7 +277,7 @@ export class AudioService {
       items: items.map((item) =>
         this.serializeAudioVersion(
           item,
-          item.sourceId ? summaryMap.get(item.sourceId) ?? null : null,
+          item.sourceId ? (summaryMap.get(item.sourceId) ?? null) : null,
         ),
       ),
       pagination: {
@@ -369,10 +367,7 @@ export class AudioService {
     );
 
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${audio.id}.mp3"`,
-    );
+    res.setHeader('Content-Disposition', `inline; filename="${audio.id}.mp3"`);
 
     const stream = createReadStream(absoluteFilePath);
 
@@ -408,35 +403,32 @@ export class AudioService {
       .filter(Boolean)
       .join(' ');
 
-    const response = await fetch(
-      `${this.openRouterBaseUrl}/chat/completions`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${this.openRouterApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.ttsModel,
-          stream: true,
-          modalities: ['text', 'audio'],
-          audio: {
-            voice: voiceName,
-            format: DEFAULT_AUDIO_FORMAT,
-          },
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: input,
-            },
-          ],
-        }),
+    const response = await fetch(`${this.openRouterBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.openRouterApiKey}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        model: this.ttsModel,
+        stream: true,
+        modalities: ['text', 'audio'],
+        audio: {
+          voice: voiceName,
+          format: DEFAULT_AUDIO_FORMAT,
+        },
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: input,
+          },
+        ],
+      }),
+    });
 
     if (!response.ok || !response.body) {
       const errorText = await response.text().catch(() => '');
