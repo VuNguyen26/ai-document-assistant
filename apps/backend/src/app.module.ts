@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
+import { validateEnvironment } from './config/environment.validation';
 import { PrismaModule } from './libs/prisma/prisma.module';
 import { StorageModule } from './libs/storage/storage.module';
 import { HealthModule } from './modules/health/health.module';
@@ -23,6 +24,7 @@ import { AudioModule } from './modules/audio/audio.module';
       isGlobal: true,
       cache: true,
       expandVariables: true,
+      validate: validateEnvironment,
       load: [appConfig, databaseConfig],
     }),
     PrismaModule,
