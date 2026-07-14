@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { LocalStorageService } from './local-storage.service';
+import { R2StorageService } from './r2-storage.service';
 import { StorageService } from './storage.service';
 
 @Global()
@@ -20,11 +21,15 @@ import { StorageService } from './storage.service';
           .trim()
           .toLowerCase();
 
-        if (driver !== 'local') {
-          throw new Error(`Unsupported storage driver: ${driver}`);
+        if (driver === 'local') {
+          return localStorageService;
         }
 
-        return localStorageService;
+        if (driver === 'r2') {
+          return new R2StorageService(configService);
+        }
+
+        throw new Error(`Unsupported storage driver: ${driver}`);
       },
     },
   ],

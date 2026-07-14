@@ -5,6 +5,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import type { Readable } from 'node:stream';
 
+import { normalizeStorageKey } from './storage-key.util';
 import { StorageService } from './storage.service';
 
 @Injectable()
@@ -46,29 +47,9 @@ export class LocalStorageService extends StorageService {
   }
 
   private resolveStoragePath(key: string): string {
-    const normalizedKey = key.trim().replace(/\\/g, '/');
+    const normalizedKey = normalizeStorageKey(key);
 
-    if (
-      !normalizedKey ||
-      key.includes('\\') ||
-      normalizedKey.includes('\0') ||
-      normalizedKey.startsWith('/') ||
-      isAbsolute(normalizedKey)
-    ) {
-      throw new Error('Invalid storage key');
-    }
-
-    const segments = normalizedKey.split('/');
-
-    if (
-      segments.some(
-        (segment) => !segment || segment === '.' || segment === '..',
-      )
-    ) {
-      throw new Error('Invalid storage key');
-    }
-
-    const filePath = resolve(this.rootDirectory, ...segments);
+    const filePath = resolve(this.rootDirectory, ...normalizedKey.split('/'));
 
     const relativePath = relative(this.rootDirectory, filePath);
 
