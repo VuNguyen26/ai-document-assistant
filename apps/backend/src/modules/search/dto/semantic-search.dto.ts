@@ -9,10 +9,12 @@ import {
   Min,
 } from 'class-validator';
 
+import { trimString } from '../../../common/transforms/value.transforms';
+
 export class SemanticSearchDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(trimString)
   query!: string;
 
   @IsOptional()

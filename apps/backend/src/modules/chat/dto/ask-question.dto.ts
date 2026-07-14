@@ -9,10 +9,12 @@ import {
   Min,
 } from 'class-validator';
 
+import { trimString } from '../../../common/transforms/value.transforms';
+
 export class AskQuestionDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(trimString)
   question!: string;
 
   @IsOptional()
