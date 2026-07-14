@@ -14,8 +14,7 @@ function normalizeOrigin(origin: string): string {
 
 function getAllowedOrigins(): Set<string> {
   const configuredOrigins = [
-    'http://localhost:3000',
-    'https://ai-document-assistant-tau.vercel.app',
+    ...(process.env.NODE_ENV === 'production' ? [] : ['http://localhost:3000']),
     process.env.FRONTEND_URL,
     process.env.CORS_ORIGINS,
   ]
