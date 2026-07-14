@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -275,7 +281,7 @@ export default function DocumentDetailView({
   const [chunkSearch, setChunkSearch] = useState("");
   const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
 
-  async function loadDocument() {
+  const loadDocument = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -294,7 +300,7 @@ export default function DocumentDetailView({
     } finally {
       setLoading(false);
     }
-  }
+  }, [documentId]);
 
   async function refreshDocumentDetail() {
     try {
@@ -339,7 +345,9 @@ export default function DocumentDetailView({
       await loadDocument();
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Thao tác xử lý tài liệu thất bại.";
+        err instanceof Error
+          ? err.message
+          : "Thao tác xử lý tài liệu thất bại.";
       setError(message);
       toast.error(message);
     } finally {
@@ -349,7 +357,7 @@ export default function DocumentDetailView({
 
   useEffect(() => {
     void loadDocument();
-  }, [documentId]);
+  }, [loadDocument]);
 
   const extractedText = useMemo(() => {
     if (!document?.content) return "";
@@ -402,7 +410,9 @@ export default function DocumentDetailView({
   const canProcess = !isProcessing && actionLoading === null && !isReady;
   const canReprocess = !isProcessing && actionLoading === null;
 
-  const recommendedAction = getRecommendedAction(document?.status ?? "UPLOADED");
+  const recommendedAction = getRecommendedAction(
+    document?.status ?? "UPLOADED",
+  );
 
   const tabs = [
     { key: "overview" as const, label: "Tổng quan" },
@@ -512,7 +522,9 @@ export default function DocumentDetailView({
                   disabled={!canChunk}
                   className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {actionLoading === "chunk" ? "Đang chia đoạn..." : "Chia đoạn"}
+                  {actionLoading === "chunk"
+                    ? "Đang chia đoạn..."
+                    : "Chia đoạn"}
                 </button>
 
                 <button

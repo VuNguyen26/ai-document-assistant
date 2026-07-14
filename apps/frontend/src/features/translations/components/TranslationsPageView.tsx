@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -104,17 +104,20 @@ export default function TranslationsPageView() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [summaries, setSummaries] = useState<SummaryItem[]>([]);
   const [translations, setTranslations] = useState<TranslationItem[]>([]);
-  const [pagination, setPagination] =
-    useState<TranslationsListResponse["pagination"]>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    TranslationsListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<TranslationItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TranslationItem | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [loadingSummaries, setLoadingSummaries] = useState(false);
 
@@ -175,31 +178,34 @@ export default function TranslationsPageView() {
     }
   }
 
-  async function loadTranslations(
-    nextPage = page,
-    nextDocumentId = filterDocumentId,
-    nextSourceType = filterSourceType,
-  ) {
-    try {
-      setLoading(true);
+  const loadTranslations = useCallback(
+    async (
+      nextPage = page,
+      nextDocumentId = filterDocumentId,
+      nextSourceType = filterSourceType,
+    ) => {
+      try {
+        setLoading(true);
 
-      const data = await getTranslations({
-        page: nextPage,
-        limit: PAGE_SIZE,
-        documentId: nextDocumentId || undefined,
-        sourceType: nextSourceType || undefined,
-      });
+        const data = await getTranslations({
+          page: nextPage,
+          limit: PAGE_SIZE,
+          documentId: nextDocumentId || undefined,
+          sourceType: nextSourceType || undefined,
+        });
 
-      setTranslations(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Không thể tải bản dịch.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+        setTranslations(data.items);
+        setPagination(data.pagination);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Không thể tải bản dịch.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, filterDocumentId, filterSourceType],
+  );
 
   async function handleGenerateTranslation() {
     if (!documentId) {
@@ -245,8 +251,7 @@ export default function TranslationsPageView() {
       toast.success("Đã xóa bản dịch.");
       setDeleteTarget(null);
 
-      const nextPage =
-        translations.length === 1 && page > 1 ? page - 1 : page;
+      const nextPage = translations.length === 1 && page > 1 ? page - 1 : page;
 
       setPage(nextPage);
       await loadTranslations(nextPage, filterDocumentId, filterSourceType);
@@ -265,7 +270,7 @@ export default function TranslationsPageView() {
 
   useEffect(() => {
     void loadTranslations(page, filterDocumentId, filterSourceType);
-  }, [page, filterDocumentId, filterSourceType]);
+  }, [loadTranslations, page, filterDocumentId, filterSourceType]);
 
   useEffect(() => {
     if (sourceType !== "SUMMARY") {
@@ -442,7 +447,9 @@ export default function TranslationsPageView() {
                     <input
                       id="translation-target-language"
                       value={targetLanguage}
-                      onChange={(event) => setTargetLanguage(event.target.value)}
+                      onChange={(event) =>
+                        setTargetLanguage(event.target.value)
+                      }
                       placeholder="en / vi / ja"
                       className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
                     />
@@ -564,76 +571,78 @@ export default function TranslationsPageView() {
 
           <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6 space-y-5">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-                    Lịch sử
-                  </p>
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
+                  Lịch sử
+                </p>
 
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-                    Lịch sử bản dịch
-                  </h2>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+                  Lịch sử bản dịch
+                </h2>
 
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    Xem lại các bản dịch đã tạo và sao chép kết quả để tái sử dụng.
-                  </p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                  Xem lại các bản dịch đã tạo và sao chép kết quả để tái sử
+                  dụng.
+                </p>
+              </div>
+
+              <div className="grid w-full gap-4 md:grid-cols-2">
+                <div className="min-w-0 space-y-2">
+                  <label
+                    htmlFor="translation-filter-document"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Lọc theo tài liệu
+                  </label>
+
+                  <select
+                    id="translation-filter-document"
+                    value={filterDocumentId}
+                    onChange={(event) => {
+                      setFilterDocumentId(event.target.value);
+                      setPage(1);
+                    }}
+                    className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                  >
+                    <option value="">Tất cả tài liệu</option>
+                    {documents.map((doc) => (
+                      <option key={doc.id} value={doc.id}>
+                        {doc.title}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="grid w-full gap-4 md:grid-cols-2">
-                  <div className="min-w-0 space-y-2">
-                    <label
-                      htmlFor="translation-filter-document"
-                      className="text-sm font-semibold text-slate-700"
-                    >
-                      Lọc theo tài liệu
-                    </label>
+                <div className="min-w-0 space-y-2">
+                  <label
+                    htmlFor="translation-filter-source-type"
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Lọc theo nguồn
+                  </label>
 
-                    <select
-                      id="translation-filter-document"
-                      value={filterDocumentId}
-                      onChange={(event) => {
-                        setFilterDocumentId(event.target.value);
-                        setPage(1);
-                      }}
-                      className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                    >
-                      <option value="">Tất cả tài liệu</option>
-                      {documents.map((doc) => (
-                        <option key={doc.id} value={doc.id}>
-                          {doc.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="min-w-0 space-y-2">
-                    <label
-                      htmlFor="translation-filter-source-type"
-                      className="text-sm font-semibold text-slate-700"
-                    >
-                      Lọc theo nguồn
-                    </label>
-
-                    <select
-                      id="translation-filter-source-type"
-                      value={filterSourceType}
-                      onChange={(event) => {
-                        setFilterSourceType(
-                          (event.target.value as TranslationSourceType | "") || "",
-                        );
-                        setPage(1);
-                      }}
-                      className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
-                    >
-                      <option value="">Tất cả nguồn</option>
-                      {SOURCE_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <select
+                    id="translation-filter-source-type"
+                    value={filterSourceType}
+                    onChange={(event) => {
+                      setFilterSourceType(
+                        (event.target.value as TranslationSourceType | "") ||
+                          "",
+                      );
+                      setPage(1);
+                    }}
+                    className="h-12 w-full min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+                  >
+                    <option value="">Tất cả nguồn</option>
+                    {SOURCE_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+            </div>
 
             {loading ? (
               <div className="space-y-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -100,14 +100,14 @@ export default function WorkspaceDetailView({
   const [description, setDescription] = useState("");
   const [documentIdToAdd, setDocumentIdToAdd] = useState("");
 
-  async function loadWorkspace() {
+  const loadWorkspace = useCallback(async () => {
     const data = await getWorkspaceById(workspaceId);
     setWorkspace(data);
     setName(data.name);
     setDescription(data.description || "");
-  }
+  }, [workspaceId]);
 
-  async function loadDocuments() {
+  const loadDocuments = useCallback(async () => {
     const data = await getDocuments({
       page: 1,
       limit: 100,
@@ -116,9 +116,9 @@ export default function WorkspaceDetailView({
     });
 
     setDocuments(data.items);
-  }
+  }, []);
 
-  async function loadPageData() {
+  const loadPageData = useCallback(async () => {
     try {
       setLoading(true);
       await Promise.all([loadWorkspace(), loadDocuments()]);
@@ -131,11 +131,11 @@ export default function WorkspaceDetailView({
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadWorkspace, loadDocuments]);
 
   useEffect(() => {
     void loadPageData();
-  }, [workspaceId]);
+  }, [loadPageData]);
 
   const availableDocuments = useMemo(() => {
     if (!workspace) return documents;
@@ -248,7 +248,8 @@ export default function WorkspaceDetailView({
         </h1>
 
         <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy cập.
+          Không gian làm việc này không tồn tại hoặc bạn không có quyền truy
+          cập.
         </p>
 
         <Link

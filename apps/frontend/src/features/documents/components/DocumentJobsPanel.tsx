@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import { getDocumentJobs } from "../api/document-jobs.api";
@@ -81,13 +81,14 @@ export default function DocumentJobsPanel({
   onRefreshDocument,
 }: DocumentJobsPanelProps) {
   const [jobs, setJobs] = useState<DocumentProcessingJob[]>([]);
-  const [pagination, setPagination] =
-    useState<DocumentJobsListResponse["pagination"]>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    DocumentJobsListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -95,38 +96,41 @@ export default function DocumentJobsPanel({
     return documentStatus === "PROCESSING" || isDocumentJobActive(latestJob);
   }, [documentStatus, latestJob]);
 
-  async function loadJobs(showLoading = true, silent = false) {
-    try {
-      if (showLoading) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
+  const loadJobs = useCallback(
+    async (showLoading = true, silent = false) => {
+      try {
+        if (showLoading) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
+        }
 
-      const data = await getDocumentJobs(documentId, {
-        page: 1,
-        limit: PAGE_SIZE,
-      });
+        const data = await getDocumentJobs(documentId, {
+          page: 1,
+          limit: PAGE_SIZE,
+        });
 
-      setJobs(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      if (!silent) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Không thể tải lịch sử xử lý tài liệu",
-        );
+        setJobs(data.items);
+        setPagination(data.pagination);
+      } catch (error) {
+        if (!silent) {
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Không thể tải lịch sử xử lý tài liệu",
+          );
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+    },
+    [documentId],
+  );
 
   useEffect(() => {
     void loadJobs(true);
-  }, [documentId]);
+  }, [loadJobs]);
 
   useEffect(() => {
     if (!shouldPoll) return;
@@ -137,15 +141,13 @@ export default function DocumentJobsPanel({
     }, 3000);
 
     return () => window.clearInterval(interval);
-  }, [shouldPoll, documentId, onRefreshDocument]);
+  }, [shouldPoll, loadJobs, onRefreshDocument]);
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">
-            Tác vụ nền
-          </h2>
+          <h2 className="text-lg font-semibold text-slate-900">Tác vụ nền</h2>
           <p className="mt-1 text-sm text-slate-500">
             Theo dõi pipeline tự động, xử lý, xử lý lại và thử lại của tài liệu
             này.
@@ -186,9 +188,7 @@ export default function DocumentJobsPanel({
               </span>
             </>
           ) : (
-            <span className="text-sm text-slate-500">
-              Chưa có tác vụ nào
-            </span>
+            <span className="text-sm text-slate-500">Chưa có tác vụ nào</span>
           )}
         </div>
 

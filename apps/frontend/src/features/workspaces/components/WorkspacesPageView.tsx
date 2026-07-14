@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -60,13 +60,14 @@ function getDocumentStatusLabel(status: string) {
 
 export default function WorkspacesPageView() {
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const [pagination, setPagination] =
-    useState<WorkspacesListResponse["pagination"]>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    WorkspacesListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -83,32 +84,35 @@ export default function WorkspacesPageView() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  async function loadWorkspaces(nextPage = page, nextSearch = search) {
-    try {
-      setLoading(true);
+  const loadWorkspaces = useCallback(
+    async (nextPage = page, nextSearch = search) => {
+      try {
+        setLoading(true);
 
-      const data = await getWorkspaces({
-        page: nextPage,
-        limit: PAGE_SIZE,
-        search: nextSearch || undefined,
-      });
+        const data = await getWorkspaces({
+          page: nextPage,
+          limit: PAGE_SIZE,
+          search: nextSearch || undefined,
+        });
 
-      setWorkspaces(data.items);
-      setPagination(data.pagination);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải danh sách không gian làm việc.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+        setWorkspaces(data.items);
+        setPagination(data.pagination);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể tải danh sách không gian làm việc.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [page, search],
+  );
 
   useEffect(() => {
     void loadWorkspaces(page, search);
-  }, [page, search]);
+  }, [loadWorkspaces, page, search]);
 
   function resetForm() {
     setEditingWorkspaceId(null);
