@@ -98,20 +98,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [user, setUser] = useState<ReturnType<typeof getAuthUser> | null>(null);
 
   useEffect(() => {
-    const authUser = getAuthUser();
+    const timeoutId = window.setTimeout(() => {
+      const authUser = getAuthUser();
 
-    if (!authUser) {
-      router.replace("/login");
-      return;
-    }
+      if (!authUser) {
+        router.replace("/login");
+        return;
+      }
 
-    setUser(authUser);
-    setMounted(true);
+      setUser(authUser);
+      setMounted(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [router]);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   function handleLogout() {
     clearAuthSession();
@@ -288,6 +288,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       <Link
                         key={item.href}
                         href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
                         className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition ${
                           active
                             ? "bg-slate-950 text-white"
