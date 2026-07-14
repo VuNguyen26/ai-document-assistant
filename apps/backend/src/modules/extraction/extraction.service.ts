@@ -7,7 +7,6 @@ import {
 import { DocumentStatus } from '@prisma/client';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import { franc } from 'franc';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { cleanExtractedText } from './cleaners/text-cleaner';
@@ -112,7 +111,7 @@ export class ExtractionService {
 
     const cleanedText = cleanExtractedText(extractedText);
     const textLength = cleanedText.length;
-    const detectedLanguage = this.detectLanguage(cleanedText);
+    const detectedLanguage = await this.detectLanguage(cleanedText);
 
     try {
       await this.prisma.$transaction([
@@ -212,18 +211,15 @@ export class ExtractionService {
     throw new BadRequestException('Unsupported file type for extraction');
   }
 
-  private detectLanguage(text: string): string {
+  private async detectLanguage(text: string): Promise<string> {
     if (!text || text.trim().length < 20) {
       return 'und';
     }
 
+    const { franc } = await import('franc');
     const result = franc(text, { minLength: 20 });
 
-    if (result === 'und') {
-      return 'und';
-    }
-
-    return result;
+    return result === 'und' ? 'und' : result;
   }
 
   private async markDocumentFailed(
