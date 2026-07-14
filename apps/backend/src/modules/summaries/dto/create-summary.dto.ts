@@ -1,5 +1,11 @@
 import { SummaryType } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateSummaryDto {
   @IsUUID('4', { message: 'documentId phải là UUID hợp lệ' })

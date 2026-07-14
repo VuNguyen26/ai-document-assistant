@@ -26,9 +26,7 @@ export class ListDocumentsQueryDto {
 
   @IsOptional()
   @IsString({ message: 'search phải là chuỗi' })
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   search?: string;
 
   @IsOptional()

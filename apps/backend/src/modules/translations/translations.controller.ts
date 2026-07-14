@@ -40,7 +40,10 @@ export class TranslationsController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListTranslationsQueryDto,
   ) {
-    const data = await this.translationsService.listTranslations(user.id, query);
+    const data = await this.translationsService.listTranslations(
+      user.id,
+      query,
+    );
 
     return {
       success: true,

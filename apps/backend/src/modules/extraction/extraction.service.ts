@@ -56,7 +56,10 @@ export class ExtractionService {
     });
 
     if (!document.storageKey) {
-      await this.markDocumentFailed(document.id, 'Document storage key is missing');
+      await this.markDocumentFailed(
+        document.id,
+        'Document storage key is missing',
+      );
       throw new BadRequestException('Document storage key is missing');
     }
 
