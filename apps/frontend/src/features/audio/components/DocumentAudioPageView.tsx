@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
 
-import { getDocumentById } from '@/features/documents/api/documents.api';
-import type { DocumentDetailResponse } from '@/features/documents/types/documents.types';
-import { getSummaries } from '@/features/summaries/api/summaries.api';
-import type { SummaryItem } from '@/features/summaries/types/summaries.types';
+import { getDocumentById } from "@/features/documents/api/documents.api";
+import type { DocumentDetailResponse } from "@/features/documents/types/documents.types";
+import { getSummaries } from "@/features/summaries/api/summaries.api";
+import type { SummaryItem } from "@/features/summaries/types/summaries.types";
 import {
   createAudioVersion,
   deleteAudioVersion,
   getAudioFileBlob,
   getAudioVersions,
-} from '../api/audio.api';
+} from "../api/audio.api";
 import type {
   AudioSourceType,
   AudioVersionItem,
   AudioVersionsListResponse,
-} from '../types/audio.types';
+} from "../types/audio.types";
 
 type DocumentAudioPageViewProps = {
   documentId: string;
@@ -27,19 +27,19 @@ type DocumentAudioPageViewProps = {
 const PAGE_SIZE = 10;
 
 const BUILT_IN_VOICES = [
-  'alloy',
-  'ash',
-  'ballad',
-  'coral',
-  'echo',
-  'fable',
-  'nova',
-  'onyx',
-  'sage',
-  'shimmer',
-  'verse',
-  'marin',
-  'cedar',
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "fable",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+  "verse",
+  "marin",
+  "cedar",
 ];
 
 function formatDate(value: string) {
@@ -47,29 +47,29 @@ function formatDate(value: string) {
 
   if (Number.isNaN(date.getTime())) return value;
 
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+  return new Intl.DateTimeFormat("vi-VN", {
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(date);
 }
 
 function formatDuration(seconds?: number | null) {
-  if (seconds == null) return '—';
+  if (seconds == null) return "—";
 
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
 
-  return `${mins}:${String(secs).padStart(2, '0')}`;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
 function getSourceTypeLabel(value: string) {
   switch (value) {
-    case 'DOCUMENT':
-    case 'Document content':
-      return 'Nội dung tài liệu';
-    case 'SUMMARY':
-    case 'Summary':
-      return 'Bản tóm tắt';
+    case "DOCUMENT":
+    case "Document content":
+      return "Nội dung tài liệu";
+    case "SUMMARY":
+    case "Summary":
+      return "Bản tóm tắt";
     default:
       return value;
   }
@@ -77,18 +77,18 @@ function getSourceTypeLabel(value: string) {
 
 function getAudioStatusLabel(value: string) {
   switch (value) {
-    case 'PENDING':
-      return 'Đang chờ';
-    case 'PROCESSING':
-      return 'Đang xử lý';
-    case 'READY':
-    case 'COMPLETED':
-    case 'SUCCEEDED':
-      return 'Hoàn tất';
-    case 'FAILED':
-      return 'Thất bại';
-    case 'DELETED':
-      return 'Đã xóa';
+    case "PENDING":
+      return "Đang chờ";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "READY":
+    case "COMPLETED":
+    case "SUCCEEDED":
+      return "Hoàn tất";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
     default:
       return value;
   }
@@ -96,30 +96,30 @@ function getAudioStatusLabel(value: string) {
 
 function getDocumentStatusLabel(status?: string | null) {
   switch (status) {
-    case 'UPLOADED':
-      return 'Đã tải lên';
-    case 'PROCESSING':
-      return 'Đang xử lý';
-    case 'VALIDATING':
-      return 'Đang kiểm tra';
-    case 'EXTRACTING':
-      return 'Đang trích xuất';
-    case 'EXTRACTED':
-      return 'Đã trích xuất';
-    case 'CHUNKING':
-      return 'Đang chia đoạn';
-    case 'CHUNKED':
-      return 'Đã chia đoạn';
-    case 'EMBEDDING':
-      return 'Đang tạo embedding';
-    case 'READY':
-      return 'Sẵn sàng';
-    case 'FAILED':
-      return 'Thất bại';
-    case 'DELETED':
-      return 'Đã xóa';
+    case "UPLOADED":
+      return "Đã tải lên";
+    case "PROCESSING":
+      return "Đang xử lý";
+    case "VALIDATING":
+      return "Đang kiểm tra";
+    case "EXTRACTING":
+      return "Đang trích xuất";
+    case "EXTRACTED":
+      return "Đã trích xuất";
+    case "CHUNKING":
+      return "Đang chia đoạn";
+    case "CHUNKED":
+      return "Đã chia đoạn";
+    case "EMBEDDING":
+      return "Đang tạo embedding";
+    case "READY":
+      return "Sẵn sàng";
+    case "FAILED":
+      return "Thất bại";
+    case "DELETED":
+      return "Đã xóa";
     default:
-      return status || 'Chưa xác định';
+      return status || "Chưa xác định";
   }
 }
 
@@ -129,13 +129,14 @@ export default function DocumentAudioPageView({
   const [document, setDocument] = useState<DocumentDetailResponse | null>(null);
   const [summaries, setSummaries] = useState<SummaryItem[]>([]);
   const [audioVersions, setAudioVersions] = useState<AudioVersionItem[]>([]);
-  const [pagination, setPagination] =
-    useState<AudioVersionsListResponse['pagination']>({
-      page: 1,
-      limit: PAGE_SIZE,
-      total: 0,
-      totalPages: 1,
-    });
+  const [pagination, setPagination] = useState<
+    AudioVersionsListResponse["pagination"]
+  >({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
 
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -143,21 +144,22 @@ export default function DocumentAudioPageView({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [sourceType, setSourceType] = useState<AudioSourceType>('DOCUMENT');
-  const [summaryId, setSummaryId] = useState('');
-  const [language, setLanguage] = useState('');
-  const [voiceName, setVoiceName] = useState('alloy');
-  const [speed, setSpeed] = useState('1');
-  const [instructions, setInstructions] = useState('');
+  const [sourceType, setSourceType] = useState<AudioSourceType>("DOCUMENT");
+  const [summaryId, setSummaryId] = useState("");
+  const [language, setLanguage] = useState("");
+  const [voiceName, setVoiceName] = useState("alloy");
+  const [speed, setSpeed] = useState("1");
+  const [instructions, setInstructions] = useState("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
 
-  async function loadDocument() {
+  const loadDocument = useCallback(async () => {
     const data = await getDocumentById(documentId);
     setDocument(data);
-  }
+  }, [documentId]);
 
-  async function loadSummaries() {
+  const loadSummaries = useCallback(async () => {
     try {
       const data = await getSummaries({
         page: 1,
@@ -169,9 +171,9 @@ export default function DocumentAudioPageView({
     } catch {
       setSummaries([]);
     }
-  }
+  }, [documentId]);
 
-  async function loadAudioVersions() {
+  const loadAudioVersions = useCallback(async () => {
     const data = await getAudioVersions({
       page: 1,
       limit: PAGE_SIZE,
@@ -180,30 +182,34 @@ export default function DocumentAudioPageView({
 
     setAudioVersions(data.items);
     setPagination(data.pagination);
-  }
+  }, [documentId]);
 
-  async function loadPageData() {
+  const loadPageData = useCallback(async () => {
     try {
       setLoading(true);
       await Promise.all([loadDocument(), loadSummaries(), loadAudioVersions()]);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải trang audio.',
+        error instanceof Error ? error.message : "Không thể tải trang audio.",
       );
     } finally {
       setLoading(false);
     }
-  }
+  }, [loadAudioVersions, loadDocument, loadSummaries]);
 
   useEffect(() => {
     void loadPageData();
+  }, [loadPageData]);
 
+  useEffect(() => {
     return () => {
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      const currentAudioUrl = audioUrlRef.current;
+
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
       }
     };
-  }, [documentId]);
+  }, []);
 
   const selectedSummary = useMemo(
     () => summaries.find((item) => item.id === summaryId) || null,
@@ -211,8 +217,8 @@ export default function DocumentAudioPageView({
   );
 
   async function handleGenerate() {
-    if (sourceType === 'SUMMARY' && !summaryId) {
-      toast.error('Vui lòng chọn bản tóm tắt trước.');
+    if (sourceType === "SUMMARY" && !summaryId) {
+      toast.error("Vui lòng chọn bản tóm tắt trước.");
       return;
     }
 
@@ -222,18 +228,18 @@ export default function DocumentAudioPageView({
       await createAudioVersion({
         documentId,
         sourceType,
-        sourceId: sourceType === 'SUMMARY' ? summaryId : undefined,
+        sourceId: sourceType === "SUMMARY" ? summaryId : undefined,
         language: language.trim() || undefined,
         voiceName,
         speed: Number(speed),
         instructions: instructions.trim() || undefined,
       });
 
-      toast.success('Tạo audio thành công.');
+      toast.success("Tạo audio thành công.");
       await loadAudioVersions();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Tạo audio thất bại.',
+        error instanceof Error ? error.message : "Tạo audio thất bại.",
       );
     } finally {
       setGenerating(false);
@@ -244,24 +250,28 @@ export default function DocumentAudioPageView({
     try {
       setPlayingAudioId(audioId);
 
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      const currentAudioUrl = audioUrlRef.current;
+
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
+        audioUrlRef.current = null;
         setAudioUrl(null);
       }
 
       const blob = await getAudioFileBlob(audioId);
       const nextUrl = URL.createObjectURL(blob);
 
+      audioUrlRef.current = nextUrl;
       setAudioUrl(nextUrl);
 
       window.setTimeout(() => {
         audioRef.current?.play().catch(() => {
-          toast.error('Không thể phát audio.');
+          toast.error("Không thể phát audio.");
         });
       }, 50);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Không thể tải tệp audio.',
+        error instanceof Error ? error.message : "Không thể tải tệp audio.",
       );
     } finally {
       setPlayingAudioId(null);
@@ -269,17 +279,17 @@ export default function DocumentAudioPageView({
   }
 
   async function handleDelete(audioId: string) {
-    const confirmed = window.confirm('Xóa phiên bản audio này?');
+    const confirmed = window.confirm("Xóa phiên bản audio này?");
     if (!confirmed) return;
 
     try {
       setDeletingId(audioId);
       await deleteAudioVersion(audioId);
-      toast.success('Đã xóa audio.');
+      toast.success("Đã xóa audio.");
       await loadAudioVersions();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'Xóa audio thất bại.',
+        error instanceof Error ? error.message : "Xóa audio thất bại.",
       );
     } finally {
       setDeletingId(null);
@@ -322,7 +332,7 @@ export default function DocumentAudioPageView({
           </p>
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
-            {document?.title || 'Audio'}
+            {document?.title || "Audio"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm text-slate-500">
@@ -365,7 +375,7 @@ export default function DocumentAudioPageView({
                 </select>
               </div>
 
-              {sourceType === 'SUMMARY' ? (
+              {sourceType === "SUMMARY" ? (
                 <div>
                   <label
                     htmlFor="audio-summary-source"
@@ -403,7 +413,7 @@ export default function DocumentAudioPageView({
                     id="audio-language"
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    placeholder={document?.sourceLanguage || 'vi / en / ja...'}
+                    placeholder={document?.sourceLanguage || "vi / en / ja..."}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                   />
                 </div>
@@ -471,7 +481,7 @@ export default function DocumentAudioPageView({
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 <p>
-                  Trạng thái tài liệu:{' '}
+                  Trạng thái tài liệu:{" "}
                   <strong className="text-slate-800">
                     {getDocumentStatusLabel(document?.status)}
                   </strong>
@@ -479,8 +489,8 @@ export default function DocumentAudioPageView({
 
                 {selectedSummary ? (
                   <p className="mt-2">
-                    Bản tóm tắt nguồn:{' '}
-                    <strong>{selectedSummary.summaryType}</strong> •{' '}
+                    Bản tóm tắt nguồn:{" "}
+                    <strong>{selectedSummary.summaryType}</strong> •{" "}
                     {selectedSummary.language}
                   </p>
                 ) : null}
@@ -492,7 +502,7 @@ export default function DocumentAudioPageView({
                 disabled={generating}
                 className="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                {generating ? 'Đang tạo audio...' : 'Tạo audio'}
+                {generating ? "Đang tạo audio..." : "Tạo audio"}
               </button>
             </div>
           </section>
@@ -549,7 +559,7 @@ export default function DocumentAudioPageView({
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="min-w-0">
                         <h3 className="truncate text-base font-semibold text-slate-900">
-                          {audio.documentTitle || 'Tài liệu chưa đặt tên'}
+                          {audio.documentTitle || "Tài liệu chưa đặt tên"}
                         </h3>
 
                         <p className="mt-1 text-sm text-slate-500">
@@ -590,7 +600,7 @@ export default function DocumentAudioPageView({
                           disabled={playingAudioId === audio.id}
                           className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {playingAudioId === audio.id ? 'Đang tải...' : 'Phát'}
+                          {playingAudioId === audio.id ? "Đang tải..." : "Phát"}
                         </button>
 
                         <button
@@ -599,7 +609,7 @@ export default function DocumentAudioPageView({
                           disabled={deletingId === audio.id}
                           className="rounded-2xl border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {deletingId === audio.id ? 'Đang xóa...' : 'Xóa'}
+                          {deletingId === audio.id ? "Đang xóa..." : "Xóa"}
                         </button>
                       </div>
                     </div>
@@ -607,7 +617,7 @@ export default function DocumentAudioPageView({
                 ))}
 
                 <div className="text-xs text-slate-400">
-                  Đang hiển thị {audioVersions.length} / {pagination.total}{' '}
+                  Đang hiển thị {audioVersions.length} / {pagination.total}{" "}
                   phiên bản audio
                 </div>
               </div>
