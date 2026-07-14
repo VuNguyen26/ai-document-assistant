@@ -13,9 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { randomUUID } from 'crypto';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -42,14 +40,7 @@ export class DocumentsController {
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads', 'documents'),
-        filename: (_req, file, callback) => {
-          const extension = extname(file.originalname).toLowerCase();
-          const uniqueName = `${randomUUID()}${extension}`;
-          callback(null, uniqueName);
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 20 * 1024 * 1024,
       },
