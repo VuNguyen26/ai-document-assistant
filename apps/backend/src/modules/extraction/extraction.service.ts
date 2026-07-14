@@ -5,10 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DocumentStatus } from '@prisma/client';
-import { promises as fs } from 'node:fs';
-import * as path from 'node:path';
+import { extname } from 'node:path';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
+import { StorageService } from '../../libs/storage/storage.service';
 import { cleanExtractedText } from './cleaners/text-cleaner';
 import { parseTxt } from './parsers/txt.parser';
 import { parsePdf } from './parsers/pdf.parser';
@@ -23,7 +23,10 @@ const SUPPORTED_EXTRACTION_MIME_TYPES = new Set<string>([
 
 @Injectable()
 export class ExtractionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   async extractDocument(documentId: string, userId: string) {
     const document = await this.prisma.document.findFirst({
@@ -72,22 +75,16 @@ export class ExtractionService {
       );
     }
 
-    const absoluteFilePath = path.join(
-      process.cwd(),
-      'uploads',
-      document.storageKey,
-    );
-
     let fileBuffer: Buffer;
 
     try {
-      fileBuffer = await fs.readFile(absoluteFilePath);
+      fileBuffer = await this.storageService.read(document.storageKey);
     } catch {
       await this.markDocumentFailed(
         document.id,
-        'Document file not found on local storage',
+        'Document file not found in storage',
       );
-      throw new NotFoundException('Document file not found on local storage');
+      throw new NotFoundException('Document file not found in storage');
     }
 
     let extractedText = '';
@@ -193,7 +190,7 @@ export class ExtractionService {
     }
 
     if (mimeType === 'application/octet-stream') {
-      const extension = path.extname(originalFilename ?? '').toLowerCase();
+      const extension = extname(originalFilename ?? '').toLowerCase();
 
       if (extension === '.txt') {
         return parseTxt(buffer);

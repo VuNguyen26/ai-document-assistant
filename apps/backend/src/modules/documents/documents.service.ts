@@ -4,9 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DocumentStatus, Prisma } from '@prisma/client';
-import { basename, extname } from 'path';
+import { randomUUID } from 'node:crypto';
+import { basename, extname } from 'node:path';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
+import { StorageService } from '../../libs/storage/storage.service';
 import { DocumentPipelineService } from './document-pipeline.service';
 import { DocumentProcessingJobsService } from './document-processing-jobs.service';
 import type { ListDocumentsQueryDto } from './dto/list-documents-query.dto';
@@ -63,6 +65,7 @@ type LatestJob = {
 export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
     private readonly documentPipelineService: DocumentPipelineService,
     private readonly documentProcessingJobsService: DocumentProcessingJobsService,
   ) {}
@@ -75,21 +78,30 @@ export class DocumentsService {
     this.validateFile(file);
 
     const title = this.resolveTitle(dto.title, file.originalname);
-    const storageKey = `documents/${file.filename}`;
+    const extension = extname(file.originalname).toLowerCase();
+    const storageKey = `documents/${randomUUID()}${extension}`;
 
-    const document = await this.prisma.document.create({
-      data: {
-        userId,
-        title,
-        originalFilename: file.originalname,
-        storageKey,
-        mimeType: file.mimetype,
-        fileSize: BigInt(file.size),
-        status: DocumentStatus.UPLOADED,
-        errorMessage: null,
-      },
-      select: DOCUMENT_SELECT,
-    });
+    await this.storageService.write(storageKey, file.buffer);
+
+    const document = await this.prisma.document
+      .create({
+        data: {
+          userId,
+          title,
+          originalFilename: file.originalname,
+          storageKey,
+          mimeType: file.mimetype,
+          fileSize: BigInt(file.size),
+          status: DocumentStatus.UPLOADED,
+          errorMessage: null,
+        },
+        select: DOCUMENT_SELECT,
+      })
+      .catch(async (error: unknown) => {
+        await this.storageService.delete(storageKey).catch(() => undefined);
+
+        throw error;
+      });
 
     const job = await this.documentProcessingJobsService.enqueueProcessJob(
       userId,
