@@ -94,11 +94,11 @@ export class AudioService {
     }
 
     const sourceType = dto.sourceType;
-    const voiceName = (dto.voiceName?.trim() || DEFAULT_VOICE) as string;
+    const voiceName = dto.voiceName?.trim() || DEFAULT_VOICE;
     const speed = dto.speed ?? DEFAULT_SPEED;
     const instructions = dto.instructions?.trim() || undefined;
 
-    let sourceId: string | null = dto.sourceId?.trim() || null;
+    const sourceId: string | null = dto.sourceId?.trim() || null;
     let sourceText = '';
     let language = dto.language?.trim() || document.sourceLanguage || 'auto';
     let summaryLookup: SummaryLookup | null = null;

@@ -1,3 +1,3 @@
-export async function parseTxt(buffer: Buffer): Promise<string> {
+export function parseTxt(buffer: Buffer): string {
   return buffer.toString('utf-8');
 }

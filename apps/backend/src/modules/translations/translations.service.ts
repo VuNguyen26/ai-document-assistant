@@ -78,7 +78,7 @@ export class TranslationsService {
     const targetLanguage = dto.targetLanguage.trim();
     const style = dto.style?.trim() || null;
 
-    let sourceId: string | null = dto.sourceId?.trim() || null;
+    const sourceId: string | null = dto.sourceId?.trim() || null;
     let sourceText = '';
     let sourceLanguage = dto.sourceLanguage?.trim() || '';
     let summaryLookup: SummaryLookup | null = null;
