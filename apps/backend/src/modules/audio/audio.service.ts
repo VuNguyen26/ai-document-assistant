@@ -8,12 +8,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
-import { createReadStream } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
+import type { Readable } from 'node:stream';
 
 import { PrismaService } from '../../libs/prisma/prisma.service';
+import { StorageService } from '../../libs/storage/storage.service';
 import { CreateAudioVersionDto } from './dto/create-audio-version.dto';
 import { ListAudioVersionsQueryDto } from './dto/list-audio-versions-query.dto';
 
@@ -64,6 +63,7 @@ export class AudioService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly storageService: StorageService,
   ) {
     const apiKey = this.configService.get<string>('OPENROUTER_API_KEY');
 
@@ -148,12 +148,9 @@ export class AudioService {
 
     const trimmedInput = sourceText.slice(0, MAX_INPUT_CHARS);
 
-    const uploadDir = join(process.cwd(), 'uploads', 'audio');
-    await mkdir(uploadDir, { recursive: true });
-
     const filename = `${randomUUID()}.${DEFAULT_AUDIO_FORMAT}`;
     const relativeStorageKey = `audio/${filename}`;
-    const absoluteFilePath = join(process.cwd(), 'uploads', relativeStorageKey);
+    let audioStored = false;
 
     try {
       const audioBuffer = await this.generateAudioWithOpenRouter({
@@ -164,7 +161,8 @@ export class AudioService {
         instructions,
       });
 
-      await writeFile(absoluteFilePath, audioBuffer);
+      await this.storageService.write(relativeStorageKey, audioBuffer);
+      audioStored = true;
 
       const created = await this.prisma.audioVersion.create({
         data: {
@@ -192,6 +190,12 @@ export class AudioService {
 
       return this.serializeAudioVersion(created, summaryLookup);
     } catch (error) {
+      if (audioStored) {
+        await this.storageService
+          .delete(relativeStorageKey)
+          .catch(() => undefined);
+      }
+
       console.error('Failed to generate audio version with OpenRouter:', error);
       throw new InternalServerErrorException(
         'Không thể tạo audio từ OpenRouter ở thời điểm hiện tại.',
@@ -313,17 +317,9 @@ export class AudioService {
       );
     }
 
-    const absoluteFilePath = join(
-      process.cwd(),
-      'uploads',
-      audio.audioStorageKey,
-    );
-
-    try {
-      await unlink(absoluteFilePath);
-    } catch {
-      // ignore file deletion errors
-    }
+    await this.storageService
+      .delete(audio.audioStorageKey)
+      .catch(() => undefined);
 
     await this.prisma.audioVersion.delete({
       where: {
@@ -360,16 +356,22 @@ export class AudioService {
       );
     }
 
-    const absoluteFilePath = join(
-      process.cwd(),
-      'uploads',
-      audio.audioStorageKey,
-    );
+    let stream: Readable;
+
+    try {
+      stream = await this.storageService.createReadStream(
+        audio.audioStorageKey,
+      );
+    } catch {
+      res.status(404).json({
+        success: false,
+        message: 'Audio file not found',
+      });
+      return;
+    }
 
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Content-Disposition', `inline; filename="${audio.id}.mp3"`);
-
-    const stream = createReadStream(absoluteFilePath);
 
     stream.on('error', () => {
       res.status(404).json({
