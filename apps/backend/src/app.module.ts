@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import { PrismaModule } from './libs/prisma/prisma.module';
+import { StorageModule } from './libs/storage/storage.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DocumentsModule } from './modules/documents/documents.module';
@@ -25,6 +26,7 @@ import { AudioModule } from './modules/audio/audio.module';
       load: [appConfig, databaseConfig],
     }),
     PrismaModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     DocumentsModule,
