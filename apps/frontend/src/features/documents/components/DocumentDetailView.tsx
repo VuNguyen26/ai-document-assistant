@@ -422,11 +422,11 @@ export default function DocumentDetailView({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="h-56 animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
-          <div className="mt-6 h-16 animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
-          <div className="mt-6 h-[520px] animate-pulse rounded-3xl border border-slate-200 bg-white shadow-sm" />
+      <div className="w-full">
+        <div className="space-y-6">
+          <div className="h-56 animate-pulse rounded-[28px] border border-slate-200 bg-white shadow-sm" />
+          <div className="h-16 animate-pulse rounded-[20px] border border-slate-200 bg-white shadow-sm" />
+          <div className="h-[520px] animate-pulse rounded-[24px] border border-slate-200 bg-white shadow-sm" />
         </div>
       </div>
     );
@@ -434,7 +434,7 @@ export default function DocumentDetailView({
 
   if (!document) {
     return (
-      <div className="min-h-screen bg-slate-50 px-6 py-10">
+      <div className="py-12">
         <div className="mx-auto max-w-3xl rounded-3xl border border-rose-200 bg-white p-8 text-center shadow-sm">
           <h1 className="text-2xl font-bold text-slate-900">
             Không tìm thấy tài liệu
@@ -456,23 +456,23 @@ export default function DocumentDetailView({
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="w-full">
+        <div className="space-y-6">
+          <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_520px] xl:items-start">
               <div>
                 <button
                   type="button"
                   onClick={() => router.push("/documents")}
-                  className="mb-4 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                  className="mb-5 inline-flex min-h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
                   ← Quay lại tài liệu
                 </button>
 
-                <p className="text-sm font-medium text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">
                   Chi tiết tài liệu
                 </p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+                <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">
                   {document.title}
                 </h1>
                 <p className="mt-2 max-w-3xl break-all text-sm text-slate-500">
@@ -480,12 +480,12 @@ export default function DocumentDetailView({
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:w-[520px]">
                 <button
                   type="button"
                   onClick={() => void runAction("process")}
                   disabled={!canProcess}
-                  className="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   {isReady
                     ? "Đã sẵn sàng"
@@ -498,7 +498,7 @@ export default function DocumentDetailView({
                   type="button"
                   onClick={() => setReprocessDialogOpen(true)}
                   disabled={!canReprocess}
-                  className="rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-rose-100 bg-white px-3.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300"
                 >
                   {actionLoading === "reprocess"
                     ? "Đang xử lý lại..."
@@ -509,7 +509,7 @@ export default function DocumentDetailView({
                   type="button"
                   onClick={() => void runAction("extract")}
                   disabled={!canExtract}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "extract"
                     ? "Đang trích xuất..."
@@ -520,7 +520,7 @@ export default function DocumentDetailView({
                   type="button"
                   onClick={() => void runAction("chunk")}
                   disabled={!canChunk}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "chunk"
                     ? "Đang chia đoạn..."
@@ -531,7 +531,7 @@ export default function DocumentDetailView({
                   type="button"
                   onClick={() => void runAction("embed")}
                   disabled={!canEmbed}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "embed"
                     ? "Đang tạo embedding..."
@@ -542,7 +542,7 @@ export default function DocumentDetailView({
                   type="button"
                   onClick={() => router.push(`/documents/${document.id}/chat`)}
                   disabled={!isReady}
-                  className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Chat với tài liệu
                 </button>
@@ -550,7 +550,7 @@ export default function DocumentDetailView({
                 <button
                   type="button"
                   onClick={() => router.push(`/documents/${document.id}/audio`)}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                 >
                   Audio / TTS
                 </button>
@@ -607,8 +607,8 @@ export default function DocumentDetailView({
             ) : null}
           </div>
 
-          <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="flex flex-wrap gap-2">
+          <div className="rounded-[20px] border border-slate-200 bg-white p-1.5 shadow-sm">
+            <div className="grid grid-cols-3 gap-1.5">
               {tabs.map((tab) => {
                 const active = activeTab === tab.key;
 
@@ -617,10 +617,10 @@ export default function DocumentDetailView({
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    className={`rounded-2xl px-4 py-2.5 text-sm font-medium transition ${
+                    className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                       active
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`}
                   >
                     {tab.label}
@@ -632,160 +632,184 @@ export default function DocumentDetailView({
 
           {activeTab === "overview" ? (
             <div className="space-y-6">
+              <div className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+                <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+                  <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">
+                      {"Th\xf4ng tin t\u1ec7p"}
+                    </p>
+                    <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-slate-950">
+                      {"T\u1ed5ng quan t\xe0i li\u1ec7u"}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {
+                        "Metadata, dung l\u01b0\u1ee3ng v\xe0 th\u1eddi gian c\u1eadp nh\u1eadt hi\u1ec7n t\u1ea1i."
+                      }
+                    </p>
+                  </div>
+
+                  <dl className="grid sm:grid-cols-2">
+                    {[
+                      {
+                        label: "Lo\u1ea1i MIME",
+                        value: document.mimeType,
+                      },
+                      {
+                        label: "K\xedch th\u01b0\u1edbc",
+                        value: formatBytes(document.fileSize),
+                      },
+                      {
+                        label: "Ng\xf4n ng\u1eef",
+                        value:
+                          document.sourceLanguage ||
+                          "Ch\u01b0a x\xe1c \u0111\u1ecbnh",
+                      },
+                      {
+                        label: "S\u1ed1 trang",
+                        value:
+                          document.pageCount?.toString() || "Ch\u01b0a c\xf3",
+                      },
+                      {
+                        label: "T\u1ea1o l\xfac",
+                        value: formatDate(document.createdAt),
+                      },
+                      {
+                        label: "C\u1eadp nh\u1eadt",
+                        value: formatDate(document.updatedAt),
+                      },
+                    ].map((item, index) => (
+                      <div
+                        key={item.label}
+                        className={`min-w-0 px-5 py-4 sm:px-6 ${
+                          index < 4 ? "border-b border-slate-200" : ""
+                        } ${
+                          index % 2 === 0
+                            ? "sm:border-r sm:border-slate-200"
+                            : ""
+                        }`}
+                      >
+                        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                          {item.label}
+                        </dt>
+                        <dd className="mt-1.5 break-words text-sm font-semibold text-slate-700">
+                          {item.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+
+                  {document.errorMessage &&
+                  document.errorMessage !== document.latestJob?.errorMessage ? (
+                    <div className="border-t border-slate-200 px-5 py-4 sm:px-6">
+                      <div className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
+                        {document.errorMessage}
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm">
+                  <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">
+                      {"Pipeline"}
+                    </p>
+                    <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-slate-950">
+                      {"Tr\u1ea1ng th\xe1i quy tr\xecnh"}
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {
+                        "T\xe0i li\u1ec7u ch\u1ec9 s\u1eb5n s\xe0ng sau khi ho\xe0n t\u1ea5t c\u1ea3 ba b\u01b0\u1edbc."
+                      }
+                    </p>
+                  </div>
+
+                  <div className="divide-y divide-slate-200">
+                    {[
+                      {
+                        number: "01",
+                        title: "Tr\xedch xu\u1ea5t",
+                        description:
+                          "Chuy\u1ec3n n\u1ed9i dung t\u1eeb t\u1ec7p g\u1ed1c th\xe0nh v\u0103n b\u1ea3n.",
+                        active: hasExtractedText,
+                      },
+                      {
+                        number: "02",
+                        title: "Chia \u0111o\u1ea1n",
+                        description:
+                          "Chia n\u1ed9i dung th\xe0nh c\xe1c \u0111o\u1ea1n ph\u1ee5c v\u1ee5 truy xu\u1ea5t.",
+                        active: hasChunks,
+                      },
+                      {
+                        number: "03",
+                        title: "T\u1ea1o embedding",
+                        description:
+                          "Sinh vector cho t\xecm ki\u1ebfm ng\u1eef ngh\u0129a v\xe0 chat.",
+                        active: isReady,
+                      },
+                    ].map((step) => (
+                      <div
+                        key={step.number}
+                        className="grid grid-cols-[44px_minmax(0,1fr)_auto] gap-3 px-5 py-4 sm:px-6"
+                      >
+                        <div
+                          className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold ${
+                            step.active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {step.number}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold text-slate-900">
+                            {step.title}
+                          </h3>
+                          <p className="mt-1 text-sm leading-6 text-slate-500">
+                            {step.description}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`mt-0.5 inline-flex h-fit rounded-full px-2.5 py-1 text-xs font-semibold ${
+                            step.active
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {step.active
+                            ? "Ho\xe0n t\u1ea5t"
+                            : "\u0110ang ch\u1edd"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/70 px-5 py-4 sm:px-6">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                        {"S\u1ed1 \u0111o\u1ea1n hi\u1ec7n c\xf3"}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {"D\xf9ng cho truy xu\u1ea5t v\xe0 chat"}
+                      </p>
+                    </div>
+
+                    <span className="text-2xl font-semibold tracking-tight text-slate-950">
+                      {chunks.length}
+                    </span>
+                  </div>
+                </section>
+              </div>
+
               <DocumentJobsPanel
                 documentId={documentId}
                 latestJob={document.latestJob ?? null}
                 documentStatus={document.status ?? null}
                 onRefreshDocument={refreshDocumentDetail}
               />
-
-              <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-5">
-                    <h2 className="text-lg font-semibold text-slate-900">
-                      Tổng quan tài liệu
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Metadata và trạng thái hiện tại của tài liệu.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Loại MIME
-                      </p>
-                      <p className="mt-2 break-words text-sm font-medium text-slate-700">
-                        {document.mimeType}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Kích thước
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {formatBytes(document.fileSize)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Ngôn ngữ
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {document.sourceLanguage || "Chưa xác định"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Số trang
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {document.pageCount ?? "Chưa có"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Tạo lúc
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {formatDate(document.createdAt)}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Cập nhật
-                      </p>
-                      <p className="mt-2 text-sm font-medium text-slate-700">
-                        {formatDate(document.updatedAt)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {document.errorMessage ? (
-                    <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                      {document.errorMessage}
-                    </div>
-                  ) : null}
-                </section>
-
-                <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <div className="mb-5">
-                    <h2 className="text-lg font-semibold text-slate-900">
-                      Trạng thái quy trình
-                    </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Trạng thái sẵn sàng chỉ xuất hiện sau khi tạo embedding
-                      thành công.
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {[
-                      {
-                        title: "1. Trích xuất",
-                        desc: "Trích xuất nội dung văn bản từ tệp gốc.",
-                        active: hasExtractedText,
-                      },
-                      {
-                        title: "2. Chia đoạn",
-                        desc: "Chia tài liệu thành các đoạn nhỏ để truy xuất.",
-                        active: hasChunks,
-                      },
-                      {
-                        title: "3. Tạo embedding",
-                        desc: "Sinh vector embedding để tìm kiếm ngữ nghĩa và chat.",
-                        active: isReady,
-                      },
-                    ].map((step) => (
-                      <div
-                        key={step.title}
-                        className={`rounded-2xl border p-4 ${
-                          step.active
-                            ? "border-emerald-200 bg-emerald-50"
-                            : "border-slate-200 bg-slate-50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-sm font-semibold text-slate-900">
-                              {step.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {step.desc}
-                            </p>
-                          </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              step.active
-                                ? "bg-white text-emerald-700"
-                                : "bg-white text-slate-500"
-                            }`}
-                          >
-                            {step.active ? "Hoàn tất" : "Đang chờ"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                      Số đoạn
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">
-                      {chunks.length}
-                    </p>
-                  </div>
-                </section>
-              </div>
             </div>
           ) : null}
-
           {activeTab === "content" ? (
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">

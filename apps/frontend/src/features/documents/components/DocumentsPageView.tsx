@@ -165,6 +165,78 @@ export default function DocumentsPageView() {
     void loadDocuments(page, debouncedSearch, status, sortBy, sortOrder);
   }, [loadDocuments, page, debouncedSearch, status, sortBy, sortOrder]);
 
+  const hasActiveDocuments = useMemo(() => {
+    return documents.some((item) => {
+      const jobStatus = item.latestJob?.status;
+
+      return (
+        item.status === "PROCESSING" ||
+        jobStatus === "QUEUED" ||
+        jobStatus === "RUNNING" ||
+        jobStatus === "RETRYING"
+      );
+    });
+  }, [documents]);
+
+  useEffect(() => {
+    if (!hasActiveDocuments) return;
+
+    let cancelled = false;
+    let polling = false;
+
+    const refreshActiveDocuments = async () => {
+      if (polling || window.document.visibilityState !== "visible") {
+        return;
+      }
+
+      polling = true;
+
+      try {
+        const data = await getDocuments({
+          page,
+          limit: PAGE_SIZE,
+          search: debouncedSearch,
+          status,
+          sortBy,
+          sortOrder,
+        });
+
+        if (cancelled) return;
+
+        setDocuments(data.items);
+        setPagination(data.pagination);
+        setSummary(data.summary);
+      } catch {
+        // Preserve the current list while the next background poll retries.
+      } finally {
+        polling = false;
+      }
+    };
+
+    const interval = window.setInterval(() => {
+      void refreshActiveDocuments();
+    }, 3000);
+
+    const handleVisibilityChange = () => {
+      if (window.document.visibilityState === "visible") {
+        void refreshActiveDocuments();
+      }
+    };
+
+    window.document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+    };
+  }, [hasActiveDocuments, page, debouncedSearch, status, sortBy, sortOrder]);
   const hasFilters = useMemo(() => {
     return (
       debouncedSearch.length > 0 ||

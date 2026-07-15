@@ -17,7 +17,7 @@ export default function DocumentsGrid({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-slate-100">
       {documents.map((document) => (
         <DocumentCard
           key={document.id}
