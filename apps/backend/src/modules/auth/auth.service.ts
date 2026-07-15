@@ -25,6 +25,7 @@ const SAFE_USER_SELECT = {
   avatarUrl: true,
   role: true,
   status: true,
+  isGuest: true,
   lastLoginAt: true,
   createdAt: true,
   updatedAt: true,
@@ -97,6 +98,28 @@ export class AuthService {
     });
 
     return this.issueAuthTokens(safeUser, requestMeta);
+  }
+
+  async createGuest(requestMeta: RequestMeta) {
+    const guestIdentity = randomUUID();
+    const passwordHash = await bcrypt.hash(randomUUID(), this.getSaltRounds());
+
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: `guest-${guestIdentity}@guest.invalid`,
+          fullName: 'Guest',
+          passwordHash,
+          role: UserRole.USER,
+          status: UserStatus.ACTIVE,
+          isGuest: true,
+          lastLoginAt: new Date(),
+        },
+        select: SAFE_USER_SELECT,
+      });
+
+      return this.issueAuthTokens(user, requestMeta, tx);
+    });
   }
 
   async refresh(refreshToken: string, requestMeta: RequestMeta) {
