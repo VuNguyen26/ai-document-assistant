@@ -9,32 +9,37 @@ type DocumentsToolbarProps = {
   filteredCount: number;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
-  onSortByChange: (value: "createdAt" | "updatedAt" | "title" | "status") => void;
+  onSortByChange: (
+    value: "createdAt" | "updatedAt" | "title" | "status",
+  ) => void;
   onSortOrderChange: (value: "asc" | "desc") => void;
   onReset: () => void;
 };
 
 const STATUS_OPTIONS = [
-  { value: "ALL", label: "Tất cả trạng thái" },
-  { value: "UPLOADED", label: "Đã tải lên" },
-  { value: "PROCESSING", label: "Đang xử lý" },
-  { value: "EXTRACTED", label: "Đã trích xuất" },
-  { value: "CHUNKED", label: "Đã chia đoạn" },
-  { value: "READY", label: "Sẵn sàng" },
-  { value: "FAILED", label: "Thất bại" },
+  { value: "ALL", label: "T\u1ea5t c\u1ea3 tr\u1ea1ng th\xe1i" },
+  { value: "UPLOADED", label: "\u0110\xe3 t\u1ea3i l\xean" },
+  { value: "PROCESSING", label: "\u0110ang x\u1eed l\xfd" },
+  { value: "EXTRACTED", label: "\u0110\xe3 tr\xedch xu\u1ea5t" },
+  { value: "CHUNKED", label: "\u0110\xe3 chia \u0111o\u1ea1n" },
+  { value: "READY", label: "S\u1eb5n s\xe0ng" },
+  { value: "FAILED", label: "Th\u1ea5t b\u1ea1i" },
 ];
 
 const SORT_BY_OPTIONS = [
-  { value: "createdAt", label: "Ngày tạo" },
-  { value: "updatedAt", label: "Ngày cập nhật" },
-  { value: "title", label: "Tiêu đề" },
-  { value: "status", label: "Trạng thái" },
+  { value: "createdAt", label: "Ng\xe0y t\u1ea1o" },
+  { value: "updatedAt", label: "Ng\xe0y c\u1eadp nh\u1eadt" },
+  { value: "title", label: "Ti\xeau \u0111\u1ec1" },
+  { value: "status", label: "Tr\u1ea1ng th\xe1i" },
 ] as const;
 
 const SORT_ORDER_OPTIONS = [
-  { value: "desc", label: "Mới nhất trước" },
-  { value: "asc", label: "Cũ nhất trước" },
+  { value: "desc", label: "M\u1edbi nh\u1ea5t tr\u01b0\u1edbc" },
+  { value: "asc", label: "C\u0169 nh\u1ea5t tr\u01b0\u1edbc" },
 ] as const;
+
+const CONTROL_CLASS =
+  "h-11 min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-sm text-slate-800 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50";
 
 export default function DocumentsToolbar({
   search,
@@ -56,63 +61,51 @@ export default function DocumentsToolbar({
     sortOrder !== "desc";
 
   return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+    <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Bộ lọc
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">
+            {"T\xecm ki\u1ebfm v\xe0 s\u1eafp x\u1ebfp"}
           </p>
 
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
-            Tìm tài liệu
+          <h2 className="mt-1.5 text-lg font-semibold tracking-tight text-slate-950">
+            {"B\u1ed9 l\u1ecdc t\xe0i li\u1ec7u"}
           </h2>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Tìm theo tiêu đề hoặc tên tệp, sau đó lọc danh sách theo trạng thái
-            và kiểu sắp xếp.
-          </p>
         </div>
 
-        <div className="flex w-fit items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700">
-          <span className="h-2 w-2 rounded-full bg-indigo-500" />
-          <span>
-            {filteredCount}/{total} tài liệu
-          </span>
+        <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+          {filteredCount}/{total} {"t\xe0i li\u1ec7u"}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 md:col-span-2">
-          <label
-            htmlFor="documents-search"
-            className="text-sm font-semibold text-slate-700"
-          >
-            Từ khóa
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0 sm:col-span-2">
+          <label htmlFor="documents-search" className="sr-only">
+            {"T\u1eeb kh\xf3a"}
           </label>
 
           <input
             id="documents-search"
-            type="text"
+            type="search"
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="Tìm theo tiêu đề hoặc tên tệp"
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            placeholder={
+              "T\xecm theo ti\xeau \u0111\u1ec1 ho\u1eb7c t\xean t\u1ec7p"
+            }
+            className={CONTROL_CLASS}
           />
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="documents-status"
-            className="text-sm font-semibold text-slate-700"
-          >
-            Trạng thái
+        <div>
+          <label htmlFor="documents-status" className="sr-only">
+            {"Tr\u1ea1ng th\xe1i"}
           </label>
 
           <select
             id="documents-status"
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            className={CONTROL_CLASS}
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -122,12 +115,9 @@ export default function DocumentsToolbar({
           </select>
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="documents-sort-by"
-            className="text-sm font-semibold text-slate-700"
-          >
-            Sắp xếp theo
+        <div>
+          <label htmlFor="documents-sort-by" className="sr-only">
+            {"S\u1eafp x\u1ebfp theo"}
           </label>
 
           <select
@@ -136,13 +126,10 @@ export default function DocumentsToolbar({
             onChange={(event) =>
               onSortByChange(
                 event.target.value as
-                  | "createdAt"
-                  | "updatedAt"
-                  | "title"
-                  | "status",
+                  "createdAt" | "updatedAt" | "title" | "status",
               )
             }
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            className={CONTROL_CLASS}
           >
             {SORT_BY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -152,12 +139,9 @@ export default function DocumentsToolbar({
           </select>
         </div>
 
-        <div className="space-y-2">
-          <label
-            htmlFor="documents-sort-order"
-            className="text-sm font-semibold text-slate-700"
-          >
-            Thứ tự
+        <div>
+          <label htmlFor="documents-sort-order" className="sr-only">
+            {"Th\u1ee9 t\u1ef1"}
           </label>
 
           <select
@@ -166,7 +150,7 @@ export default function DocumentsToolbar({
             onChange={(event) =>
               onSortOrderChange(event.target.value as "asc" | "desc")
             }
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-4 text-sm text-slate-900 outline-none transition hover:border-indigo-200 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50"
+            className={CONTROL_CLASS}
           >
             {SORT_ORDER_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -176,16 +160,14 @@ export default function DocumentsToolbar({
           </select>
         </div>
 
-        <div className="flex items-end">
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={!hasActiveFilters}
-            className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
-          >
-            Đặt lại
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onReset}
+          disabled={!hasActiveFilters}
+          className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+        >
+          {"\u0110\u1eb7t l\u1ea1i"}
+        </button>
       </div>
     </section>
   );

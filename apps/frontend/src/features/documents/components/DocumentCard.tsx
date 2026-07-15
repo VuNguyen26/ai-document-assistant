@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
 import type { DocumentItem } from "../types/documents.types";
 import DocumentStatusBadge from "./DocumentStatusBadge";
 
@@ -9,12 +10,16 @@ type DocumentCardProps = {
   onDelete: (documentId: string) => Promise<void> | void;
 };
 
+const ARROW = "\u2192";
+const DOT = "\u2022";
+
 function formatBytes(value: string) {
   const bytes = Number(value);
 
   if (Number.isNaN(bytes)) return value;
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+
   if (bytes < 1024 * 1024 * 1024) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
@@ -23,7 +28,21 @@ function formatBytes(value: string) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "\u2014";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "\u2014";
 
   const date = new Date(value);
 
@@ -40,116 +59,86 @@ function getShortMimeType(value: string) {
   if (value.includes("wordprocessingml")) return "DOCX";
   if (value.includes("text")) return "TXT";
 
-  return value;
+  return "FILE";
 }
 
 function getPipelineAction(status: string) {
   switch (status) {
     case "UPLOADED":
       return {
-        label: "Sẵn sàng để trích xuất",
-        tone: "amber" as const,
-        cta: "Tiếp tục",
+        label: "S\u1eb5n s\xe0ng \u0111\u1ec3 tr\xedch xu\u1ea5t",
+        cta: "Ti\u1ebfp t\u1ee5c",
+        tone: "text-amber-700",
       };
     case "EXTRACTED":
       return {
-        label: "Sẵn sàng để chia đoạn",
-        tone: "cyan" as const,
-        cta: "Tiếp tục",
+        label: "S\u1eb5n s\xe0ng \u0111\u1ec3 chia \u0111o\u1ea1n",
+        cta: "Ti\u1ebfp t\u1ee5c",
+        tone: "text-cyan-700",
       };
     case "CHUNKED":
       return {
-        label: "Sẵn sàng để tạo embedding",
-        tone: "indigo" as const,
-        cta: "Tiếp tục",
+        label: "S\u1eb5n s\xe0ng t\u1ea1o embedding",
+        cta: "Ti\u1ebfp t\u1ee5c",
+        tone: "text-indigo-700",
       };
     case "PROCESSING":
       return {
-        label: "Đang xử lý",
-        tone: "blue" as const,
-        cta: "Đang xử lý",
+        label: "\u0110ang x\u1eed l\xfd n\u1ed9i dung",
+        cta: "\u0110ang x\u1eed l\xfd",
+        tone: "text-blue-700",
       };
     case "FAILED":
       return {
-        label: "Cần kiểm tra lại",
-        tone: "rose" as const,
-        cta: "Mở chi tiết",
+        label: "C\u1ea7n ki\u1ec3m tra l\u1ea1i",
+        cta: "M\u1edf chi ti\u1ebft",
+        tone: "text-rose-700",
       };
     case "READY":
       return {
-        label: "Sẵn sàng để chat",
-        tone: "emerald" as const,
-        cta: "Bắt đầu chat",
+        label: "S\u1eb5n s\xe0ng \u0111\u1ec3 h\u1ecfi \u0111\xe1p",
+        cta: "B\u1eaft \u0111\u1ea7u chat",
+        tone: "text-emerald-700",
       };
     default:
       return {
-        label: "Mở chi tiết tài liệu",
-        tone: "slate" as const,
-        cta: "Xem chi tiết",
+        label: "M\u1edf chi ti\u1ebft t\xe0i li\u1ec7u",
+        cta: "Xem chi ti\u1ebft",
+        tone: "text-slate-600",
       };
-  }
-}
-
-function getActionBoxClass(
-  tone:
-    | "amber"
-    | "cyan"
-    | "indigo"
-    | "blue"
-    | "rose"
-    | "emerald"
-    | "slate",
-) {
-  switch (tone) {
-    case "amber":
-      return "border-amber-100 bg-amber-50 text-amber-700";
-    case "cyan":
-      return "border-cyan-100 bg-cyan-50 text-cyan-700";
-    case "indigo":
-      return "border-indigo-100 bg-indigo-50 text-indigo-700";
-    case "blue":
-      return "border-blue-100 bg-blue-50 text-blue-700";
-    case "rose":
-      return "border-rose-100 bg-rose-50 text-rose-700";
-    case "emerald":
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
-    default:
-      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }
 
 function getJobStatusClass(status: string) {
   switch (status) {
     case "SUCCEEDED":
-      return "border-emerald-100 bg-emerald-50 text-emerald-700";
+      return "bg-emerald-50 text-emerald-700";
     case "FAILED":
-      return "border-rose-100 bg-rose-50 text-rose-700";
+      return "bg-rose-50 text-rose-700";
     case "RUNNING":
     case "RETRYING":
-      return "border-amber-100 bg-amber-50 text-amber-700";
+      return "bg-amber-50 text-amber-700";
     case "QUEUED":
-      return "border-cyan-100 bg-cyan-50 text-cyan-700";
-    case "CANCELLED":
-      return "border-slate-200 bg-slate-100 text-slate-600";
+      return "bg-cyan-50 text-cyan-700";
     default:
-      return "border-slate-200 bg-slate-100 text-slate-600";
+      return "bg-slate-100 text-slate-600";
   }
 }
 
 function getJobStatusLabel(status: string) {
   switch (status) {
     case "QUEUED":
-      return "Đang chờ";
+      return "\u0110ang ch\u1edd";
     case "RUNNING":
-      return "Đang chạy";
+      return "\u0110ang ch\u1ea1y";
     case "SUCCEEDED":
-      return "Thành công";
+      return "Th\xe0nh c\xf4ng";
     case "FAILED":
-      return "Thất bại";
+      return "Th\u1ea5t b\u1ea1i";
     case "RETRYING":
-      return "Đang thử lại";
+      return "\u0110ang th\u1eed l\u1ea1i";
     case "CANCELLED":
-      return "Đã hủy";
+      return "\u0110\xe3 h\u1ee7y";
     default:
       return status;
   }
@@ -163,154 +152,136 @@ export default function DocumentCard({
   const isReady = document.status === "READY";
   const isProcessing = document.status === "PROCESSING";
   const action = getPipelineAction(document.status);
+  const fileType = getShortMimeType(document.mimeType);
 
   return (
-    <article className="flex h-full flex-col rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-indigo-200 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-500">
-            Tài liệu
-          </p>
+    <article className="group px-5 py-5 transition hover:bg-slate-50/80 sm:px-6">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_150px] lg:items-start lg:gap-x-6">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-[11px] font-bold tracking-wide text-indigo-700">
+            {fileType}
+          </div>
 
-          <h3 className="mt-2 truncate text-xl font-semibold tracking-tight text-slate-950">
-            {document.title}
-          </h3>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <DocumentStatusBadge status={document.status} />
 
-          <p className="mt-1 truncate text-sm text-slate-500">
-            {document.originalFilename}
-          </p>
-        </div>
+              <span className="text-xs text-slate-400">
+                {formatDate(document.createdAt)}
+              </span>
+            </div>
 
-        <div className="shrink-0">
-          <DocumentStatusBadge status={document.status} />
-        </div>
-      </div>
+            <h3 className="mt-2 truncate text-base font-semibold tracking-tight text-slate-950 transition group-hover:text-indigo-700">
+              {document.title || document.originalFilename}
+            </h3>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Loại tệp
-          </p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            {getShortMimeType(document.mimeType)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Dung lượng
-          </p>
-          <p className="mt-1 text-sm font-semibold text-slate-800">
-            {formatBytes(document.fileSize)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Ngôn ngữ
-          </p>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-800">
-            {document.sourceLanguage || "Chưa xác định"}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-            Ngày tạo
-          </p>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-800">
-            {formatDate(document.createdAt)}
-          </p>
-        </div>
-      </div>
-
-      {document.errorMessage ? (
-        <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
-          {document.errorMessage}
-        </div>
-      ) : null}
-
-      <div
-        className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold ${getActionBoxClass(
-          action.tone,
-        )}`}
-      >
-        {action.label}
-      </div>
-
-      {document.latestJob ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Job gần nhất
+            <p className="mt-1 truncate text-sm text-slate-500">
+              {document.originalFilename}
             </p>
 
-            <span
-              className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getJobStatusClass(
-                document.latestJob.status,
-              )}`}
-            >
-              {getJobStatusLabel(document.latestJob.status)}
-            </span>
+            {document.errorMessage ? (
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-rose-600">
+                {document.errorMessage}
+              </p>
+            ) : null}
           </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-              {document.latestJob.type === "REPROCESS"
-                ? "Xử lý lại"
-                : "Xử lý"}
-            </span>
-
-            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
-              {document.latestJob.attempts}/{document.latestJob.maxAttempts}{" "}
-              lần thử
-            </span>
-          </div>
-
-          <p className="mt-3 text-xs text-slate-500">
-            Cập nhật lúc{" "}
-            <span className="font-medium text-slate-700">
-              {formatDate(document.latestJob.updatedAt)}
-            </span>
-          </p>
         </div>
-      ) : null}
 
-      <div className="mt-5 border-t border-slate-200 pt-4">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-4 text-sm lg:grid-cols-1 lg:gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {"Dung l\u01b0\u1ee3ng"}
+            </p>
+            <p className="mt-1 font-semibold text-slate-700">
+              {formatBytes(document.fileSize)}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {"Ng\xf4n ng\u1eef"}
+            </p>
+            <p className="mt-1 truncate font-semibold text-slate-700">
+              {document.sourceLanguage || "Ch\u01b0a x\xe1c \u0111\u1ecbnh"}
+            </p>
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            {"Quy tr\xecnh"}
+          </p>
+
+          <p className={`mt-1 text-sm font-semibold ${action.tone}`}>
+            {action.label}
+          </p>
+
+          {document.latestJob ? (
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span
+                className={`rounded-full px-2.5 py-1 font-semibold ${getJobStatusClass(
+                  document.latestJob.status,
+                )}`}
+              >
+                {getJobStatusLabel(document.latestJob.status)}
+              </span>
+
+              <span className="text-slate-400">{DOT}</span>
+
+              <span className="text-slate-500">
+                {document.latestJob.attempts}/{document.latestJob.maxAttempts}{" "}
+                {"l\u1ea7n th\u1eed"}
+              </span>
+            </div>
+          ) : (
+            <p className="mt-2 text-xs text-slate-400">
+              {"Ch\u01b0a c\xf3 job x\u1eed l\xfd"}
+            </p>
+          )}
+
+          {document.latestJob ? (
+            <p className="mt-2 truncate text-xs text-slate-400">
+              {"C\u1eadp nh\u1eadt"}{" "}
+              {formatDateTime(document.latestJob.updatedAt)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:flex-col">
           <button
             type="button"
             onClick={() => router.push(`/documents/${document.id}`)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 lg:w-full"
           >
-            Chi tiết
+            {"Chi ti\u1ebft"}
           </button>
 
-          {isReady ? (
-            <button
-              type="button"
-              onClick={() => router.push(`/documents/${document.id}/chat`)}
-              className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700"
-            >
-              {action.cta}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.push(`/documents/${document.id}`)}
-              disabled={isProcessing}
-              className="rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-            >
-              {action.cta}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() =>
+              router.push(
+                isReady
+                  ? `/documents/${document.id}/chat`
+                  : `/documents/${document.id}`,
+              )
+            }
+            disabled={isProcessing}
+            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300 lg:w-full"
+          >
+            <span>{action.cta}</span>
+            {!isProcessing ? (
+              <span className="ml-2" aria-hidden="true">
+                {ARROW}
+              </span>
+            ) : null}
+          </button>
 
           <button
             type="button"
             onClick={() => onDelete(document.id)}
-            className="col-span-2 rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+            className="inline-flex min-h-9 w-full items-center justify-center text-sm font-semibold text-rose-600 transition hover:text-rose-700"
           >
-            Xóa
+            {"X\xf3a t\xe0i li\u1ec7u"}
           </button>
         </div>
       </div>
