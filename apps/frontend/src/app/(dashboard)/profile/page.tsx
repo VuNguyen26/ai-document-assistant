@@ -1,26 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import {
+  getAuthUserDisplayName,
+  getAuthUserIdentifier,
+  getAuthUserInitial,
+  getAuthUserRoleLabel,
+} from "@/features/auth/utils/auth-user-display";
 import { getAuthUser } from "@/lib/auth/token-storage";
-
-function getInitial(email?: string) {
-  return email?.charAt(0).toUpperCase() || "U";
-}
-
-function getRoleLabel(role?: string | null) {
-  switch (role?.toUpperCase()) {
-    case "ADMIN":
-      return "Quản trị viên";
-    case "USER":
-      return "Người dùng";
-    default:
-      return role || "Người dùng";
-  }
-}
 
 export default function ProfilePage() {
   const user = getAuthUser();
-  const roleLabel = getRoleLabel(user?.role);
+  const userDisplayName = getAuthUserDisplayName(user);
+  const userIdentifier = getAuthUserIdentifier(user);
+  const userInitial = getAuthUserInitial(user);
+  const roleLabel = getAuthUserRoleLabel(user);
 
   return (
     <div className="space-y-8">
@@ -44,24 +38,26 @@ export default function ProfilePage() {
             </h1>
 
             <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-              Xem thông tin tài khoản đang đăng nhập và quyền truy cập trong
-              hệ thống Document AI Assistant.
+              Xem thông tin phiên hiện tại và quyền truy cập trong hệ thống
+              Document AI Assistant.
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
             <div className="flex items-center gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-indigo-600 text-2xl font-semibold uppercase text-white shadow-sm shadow-indigo-600/20">
-                {getInitial(user?.email)}
+                {userInitial}
               </div>
 
               <div className="min-w-0">
                 <p className="truncate text-lg font-semibold tracking-tight text-slate-950">
-                  {user?.email || "Không xác định"}
+                  {userDisplayName}
                 </p>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Tài khoản đang đăng nhập
+                  {user?.isGuest
+                    ? "Phiên khách riêng tư"
+                    : "Tài khoản đang đăng nhập"}
                 </p>
               </div>
             </div>
@@ -90,17 +86,17 @@ export default function ProfilePage() {
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Thông tin cơ bản của tài khoản đang được lưu trong phiên đăng nhập
-            hiện tại.
+            Thông tin cơ bản của phiên hiện tại được lưu riêng trên trình duyệt
+            này.
           </p>
 
           <div className="mt-6 space-y-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Email
+                Danh tính
               </p>
               <p className="mt-1 truncate text-sm font-semibold text-slate-900">
-                {user?.email || "—"}
+                {userIdentifier}
               </p>
             </div>
 
@@ -118,7 +114,9 @@ export default function ProfilePage() {
                 Nguồn phiên đăng nhập
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                Bộ nhớ xác thực cục bộ
+                {user?.isGuest
+                  ? "Phiên khách trên trình duyệt này"
+                  : "Bộ nhớ xác thực cục bộ"}
               </p>
             </div>
           </div>
@@ -136,8 +134,8 @@ export default function ProfilePage() {
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Tài khoản này có thể quản lý tài liệu, phiên chat và các đầu ra
-                AI đã tạo.
+                Phiên này có thể quản lý tài liệu, phiên chat và các đầu ra AI
+                đã tạo.
               </p>
             </div>
 
