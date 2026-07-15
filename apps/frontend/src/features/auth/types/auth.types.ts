@@ -10,6 +10,7 @@ export interface AuthUser {
   avatarUrl: string | null;
   role: string;
   status: string;
+  isGuest: boolean;
   lastLoginAt: string | null;
   createdAt: string;
   updatedAt: string;

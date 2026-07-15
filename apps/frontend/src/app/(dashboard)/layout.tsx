@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
-import { clearAuthSession, getAuthUser } from "@/lib/auth/token-storage";
+import { ensureAuthSession, logout } from "@/features/auth/api/auth.api";
+import {
+  getAuthUserDisplayName,
+  getAuthUserIdentifier,
+  getAuthUserInitial,
+  getAuthUserRoleLabel,
+} from "@/features/auth/utils/auth-user-display";
+import type { StoredAuthUser } from "@/lib/auth/token-storage";
+import { usePathname } from "next/navigation";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 
 type DashboardLayoutProps = {
   children: ReactNode;
@@ -78,44 +85,43 @@ function getPageDescription(pathname: string) {
   return activeItem?.description ?? "Quản lý quy trình tài liệu AI";
 }
 
-function getRoleLabel(role?: string | null) {
-  switch (role?.toUpperCase()) {
-    case "ADMIN":
-      return "Quản trị viên";
-    case "USER":
-      return "Người dùng";
-    default:
-      return role ?? "Người dùng";
-  }
-}
-
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [mounted, setMounted] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<ReturnType<typeof getAuthUser> | null>(null);
+  const [user, setUser] = useState<StoredAuthUser | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const authUser = getAuthUser();
-
-      if (!authUser) {
-        router.replace("/login");
-        return;
-      }
+  const bootstrapSession = useCallback(async () => {
+    try {
+      const authUser = await ensureAuthSession();
 
       setUser(authUser);
+      setAuthError(null);
+    } catch (error) {
+      setUser(null);
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : "Không thể bắt đầu phiên làm việc",
+      );
+    } finally {
       setMounted(true);
-    }, 0);
+    }
+  }, []);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [router]);
+  useEffect(() => {
+    void bootstrapSession();
+  }, [bootstrapSession]);
 
-  function handleLogout() {
-    clearAuthSession();
-    router.replace("/login");
+  async function handleLogout() {
+    setMounted(false);
+    setUser(null);
+    setAuthError(null);
+
+    await logout();
+    await bootstrapSession();
   }
 
   if (!mounted) {
@@ -131,13 +137,39 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
+  if (authError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-200">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-2xl backdrop-blur">
+          <h1 className="text-lg font-black text-white">
+            Không thể bắt đầu phiên làm việc
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-slate-300">{authError}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setMounted(false);
+              void bootstrapSession();
+            }}
+            className="mt-5 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
+          >
+            Th? l?i
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return null;
   }
 
   const pageTitle = getPageTitle(pathname);
   const pageDescription = getPageDescription(pathname);
-  const roleLabel = getRoleLabel(user.role);
+  const userDisplayName = getAuthUserDisplayName(user);
+  const userIdentifier = getAuthUserIdentifier(user);
+  const userInitial = getAuthUserInitial(user);
+  const roleLabel = getAuthUserRoleLabel(user);
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-950">
@@ -214,12 +246,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="border-t border-slate-200 p-4">
             <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Đang đăng nhập
+                Phiên hiện tại
               </p>
               <p className="mt-2 truncate text-sm font-bold text-slate-900">
-                {user.email}
+                {userDisplayName}
               </p>
-              <p className="mt-1 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+              <p className="mt-1 truncate text-xs text-slate-500">
+                {userIdentifier}
+              </p>
+              <p className="mt-2 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                 {roleLabel}
               </p>
             </div>
@@ -230,7 +265,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >
               <span>↩</span>
-              <span>Đăng xuất</span>
+              <span>{user.isGuest ? "Bắt đầu phiên mới" : "Đăng xuất"}</span>
             </button>
           </div>
         </aside>
@@ -261,7 +296,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex shrink-0 items-center gap-3">
                 <div className="hidden text-right sm:block">
                   <p className="truncate text-sm font-bold text-slate-900">
-                    {user.email}
+                    {userDisplayName}
                   </p>
                   <p className="text-xs font-medium text-slate-400">
                     {roleLabel}
@@ -269,7 +304,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </div>
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-sm font-black uppercase text-white shadow-lg shadow-slate-900/20">
-                  {user.email?.charAt(0) ?? "U"}
+                  {userInitial}
                 </div>
               </div>
             </div>
@@ -321,7 +356,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="flex w-full items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-left text-sm font-bold text-red-600"
                   >
                     <span>↩</span>
-                    <span>Đăng xuất</span>
+                    <span>
+                      {user.isGuest ? "Bắt đầu phiên mới" : "Đăng xuất"}
+                    </span>
                   </button>
                 </nav>
               </div>

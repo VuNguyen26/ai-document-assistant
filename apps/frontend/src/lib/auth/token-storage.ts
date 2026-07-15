@@ -5,6 +5,7 @@ export type StoredAuthUser = {
   avatarUrl?: string | null;
   role?: string;
   status?: string;
+  isGuest?: boolean;
 };
 
 const ACCESS_TOKEN_KEY = "accessToken";

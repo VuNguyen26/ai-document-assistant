@@ -32,6 +32,11 @@ export class AuthController {
     return this.authService.login(dto, this.getRequestMeta(req));
   }
 
+  @Post('guest')
+  createGuest(@Req() req: Request) {
+    return this.authService.createGuest(this.getRequestMeta(req));
+  }
+
   @HttpCode(200)
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {

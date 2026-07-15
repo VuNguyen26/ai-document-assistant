@@ -1,9 +1,7 @@
 "use client";
 
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import { logout } from "@/features/auth/api/auth.api";
-import { getAccessToken } from "@/lib/auth/token-storage";
-import { useRouter } from "next/navigation";
+import { ensureAuthSession, logout } from "@/features/auth/api/auth.api";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import {
@@ -13,7 +11,11 @@ import {
   renameChatSession,
 } from "../api/chat.api";
 import { useChatStream } from "../hooks/useChatStream";
-import type { ChatCitation, ChatMessage, ChatSession } from "../types/chat.types";
+import type {
+  ChatCitation,
+  ChatMessage,
+  ChatSession,
+} from "../types/chat.types";
 import ChatComposer from "./ChatComposer";
 import ChatHeader from "./ChatHeader";
 import ChatMessageList from "./ChatMessageList";
@@ -75,8 +77,6 @@ function attachCitationsToLatestAssistant(
 }
 
 export default function ChatBox({ documentId }: ChatBoxProps) {
-  const router = useRouter();
-
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -84,7 +84,9 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
+    null,
+  );
   const [renameValue, setRenameValue] = useState("");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mobileSessionsOpen, setMobileSessionsOpen] = useState(false);
@@ -127,17 +129,31 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   }, []);
 
   useEffect(() => {
-    const token = getAccessToken();
+    let active = true;
 
-    if (!token) {
-      router.replace(
-        `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
-      );
-      return;
-    }
+    void ensureAuthSession()
+      .then(() => {
+        if (active) {
+          setIsCheckingAuth(false);
+        }
+      })
+      .catch((authError: unknown) => {
+        if (!active) {
+          return;
+        }
 
-    setIsCheckingAuth(false);
-  }, [router]);
+        setError(
+          authError instanceof Error
+            ? authError.message
+            : "Không thể bắt đầu phiên làm việc",
+        );
+        setIsCheckingAuth(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (isCheckingAuth) return;
@@ -176,6 +192,22 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
     textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
   }, [input]);
 
+  const resetToGuestSession = useCallback(async () => {
+    try {
+      await logout();
+      await ensureAuthSession();
+      window.location.assign("/dashboard");
+    } catch (sessionError) {
+      const message =
+        sessionError instanceof Error
+          ? sessionError.message
+          : "Không thể bắt đầu phiên khách mới";
+
+      setError(message);
+      toast.error(message);
+    }
+  }, []);
+
   const { isStreaming, startStream } = useChatStream({
     onMeta: (meta: StreamMetaPayload) => {
       if (meta.sessionId) {
@@ -185,7 +217,9 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       const citations = meta.usedChunks ?? [];
 
       if (citations.length > 0) {
-        setMessages((prev) => attachCitationsToLatestAssistant(prev, citations));
+        setMessages((prev) =>
+          attachCitationsToLatestAssistant(prev, citations),
+        );
       }
     },
     onDelta: (delta: string) => {
@@ -218,10 +252,13 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       }
     },
     onError: (message: string) => {
-      if (message.toLowerCase().includes("unauthorized")) {
-        router.replace(
-          `/login?redirect=${encodeURIComponent(window.location.pathname)}`,
-        );
+      const normalizedMessage = message.toLowerCase();
+
+      if (
+        normalizedMessage.includes("unauthorized") ||
+        normalizedMessage.includes("phiên đăng nhập")
+      ) {
+        void resetToGuestSession();
         return;
       }
 
@@ -328,7 +365,8 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
       setDeleteTarget(null);
       toast.success("Đã xóa cuộc trò chuyện.");
     } catch (err) {
-      const message = (err as Error).message || "Không xoá được cuộc trò chuyện";
+      const message =
+        (err as Error).message || "Không xoá được cuộc trò chuyện";
       setError(message);
       toast.error(message);
     } finally {
@@ -337,12 +375,8 @@ export default function ChatBox({ documentId }: ChatBoxProps) {
   }, [activeSessionId, deleteTarget, loadSessionMessages, sessions]);
 
   const handleLogout = useCallback(async () => {
-    try {
-      await logout();
-    } finally {
-      router.replace("/login");
-    }
-  }, [router]);
+    await resetToGuestSession();
+  }, [resetToGuestSession]);
 
   if (isCheckingAuth) {
     return (
